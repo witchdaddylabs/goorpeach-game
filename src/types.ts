@@ -44,6 +44,27 @@ export interface LevelConfig {
   backgroundTileset: string;
 }
 
+/** A leaderboard row as returned by the scores API / shown on the board. */
+export interface ScoreEntry {
+  initials: string; // exactly 3 uppercase letters
+  score: number; // non-negative integer
+  levelReached: number; // 1..5
+  createdAt: number; // epoch milliseconds
+}
+
+/** A score the client submits (server stamps createdAt and assigns rank). */
+export interface NewScore {
+  initials: string;
+  score: number;
+  levelReached: number;
+}
+
+/** API response after a successful submit. */
+export interface SubmitResult {
+  rank: number; // 1-based position in the global board
+  top: ScoreEntry[]; // current Top-N after insert
+}
+
 /** Persisted player settings (via systems/Persistence.ts). TODO: expand. */
 export interface GameSettings {
   soundVolume: number;

@@ -6,7 +6,9 @@
 
 ## What this is
 
-A single-page browser game. Static HTML / JS. No backend, no auth, no database. Built with Phaser 3 + TypeScript + Vite. Deployed as static files to Cloudflare Pages.
+A single-page browser game. Static HTML / JS. Built with Phaser 3 + TypeScript + Vite. Deployed as static files to Cloudflare Pages.
+
+**One backend exception (added deliberately): the global high-score board.** It is a single Cloudflare Pages Function (`/api/scores`) backed by Cloudflare D1, same-origin with the static site — no second host, no auth, no accounts, no analytics, no personal data (3-letter arcade initials only). This is the ONLY server-side piece. Do not add any other backend, API routes, auth, accounts, or analytics. See `docs/SCOREBOARD.md`.
 
 -----
 
@@ -15,8 +17,8 @@ A single-page browser game. Static HTML / JS. No backend, no auth, no database. 
 - **Phaser 3** (latest 3.x)
 - **TypeScript strict** — no `any`, no `!` assertions, no `// @ts-ignore` without a comment explaining why
 - **Vite** (vanilla-ts template)
-- **localStorage** for persistence (high score, settings, unlocked levels, volume)
-- **Cloudflare Pages** for hosting
+- **localStorage** for local persistence (settings, unlocked levels, volume, offline scoreboard fallback)
+- **Cloudflare Pages** for hosting, **Cloudflare D1** for the global high-score board only (see `docs/SCOREBOARD.md`)
 - **No frameworks.** No React, Vue, Svelte. No state libraries. Phaser scenes ARE the state.
 - **No CSS frameworks.** Inline styles on the canvas wrapper and pause overlay only. Phaser draws everything else.
 
@@ -57,7 +59,13 @@ Subtle CRT scanline overlay rendered as a Phaser RenderTexture or shader at 20% 
 ├── vite.config.ts
 ├── tsconfig.json
 ├── package.json
+├── wrangler.toml        # Cloudflare Pages + D1 binding (scoreboard only)
 ├── CLAUDE.md
+├── functions/
+│   └── api/
+│       └── scores.ts    # Pages Function: GET/POST global high scores (D1)
+├── migrations/
+│   └── 0001_create_scores.sql
 ├── public/
 │   ├── sprites/         # PNG sprite sheets
 │   ├── audio/           # mp3 / ogg
@@ -74,7 +82,8 @@ Subtle CRT scanline overlay rendered as a Phaser RenderTexture or shader at 20% 
 │   │   ├── DriveScene.ts        # parameterised by level id
 │   │   ├── BossScene.ts
 │   │   ├── GameOverScene.ts
-│   │   └── VictoryScene.ts
+│   │   ├── VictoryScene.ts
+│   │   └── ScoreboardScene.ts   # global Top-20 board + initials entry
 │   ├── entities/
 │   │   ├── PlayerCar.ts
 │   │   ├── Courier.ts           # base class
@@ -93,11 +102,14 @@ Subtle CRT scanline overlay rendered as a Phaser RenderTexture or shader at 20% 
 │   │   └── levels.ts            # level config: length, courier waves, powerup spawns
 │   └── systems/
 │       ├── Persistence.ts       # localStorage wrapper
-│       └── Audio.ts             # central audio manager
+│       ├── Audio.ts             # central audio manager
+│       ├── Score.ts             # run-score tally (config-driven)
+│       └── Scoreboard.ts        # high-score API client (+ offline fallback)
 └── docs/
     ├── BRIEF.md
     ├── SETUP.md
-    └── ASSETS.md
+    ├── ASSETS.md
+    └── SCOREBOARD.md
 ```
 
 -----
@@ -108,6 +120,7 @@ Subtle CRT scanline overlay rendered as a Phaser RenderTexture or shader at 20% 
 1. **Levels come from `data/levels.ts`.** Adding a new level = editing one file. Each level export: id, name, durationMs, scrollSpeed, courierWaves, powerUpSpawns, backgroundTileset.
 1. **Audio goes through `systems/Audio.ts`.** No `this.sound.play(...)` in scenes directly. The Audio manager handles mute, ducking between music tracks, and the browser-blocks-audio-until-first-interaction quirk.
 1. **Persistence goes through `systems/Persistence.ts`.** No raw `localStorage.setItem/getItem` in scenes. Wrap everything so we can swap to a different store later if needed.
+1. **High scores go through `systems/Scoreboard.ts`.** No `fetch` to `/api/scores` in scenes. The Scoreboard manager handles the API call, rank, and the offline localStorage fallback. Run scoring lives in `systems/Score.ts`, tuned from `SCORING` in `config.ts`.
 1. **Touch controls live in `ui/TouchControls.ts` only.** Keyboard handlers go in the relevant scene. Touch overlay is a single component that emits the same events keyboard does — scenes don’t know which input fired.
 1. **Sprite paths are constants in `config.ts`.** Never type a file path string in a scene or entity.
 1. **One scene per file.** No multi-scene files.
@@ -119,7 +132,7 @@ Subtle CRT scanline overlay rendered as a Phaser RenderTexture or shader at 20% 
 
 ## Do not
 
-- Add a backend, API routes, auth, user accounts, or analytics
+- Add any backend, API routes, auth, user accounts, or analytics **beyond** the single `/api/scores` high-score Function (the one sanctioned exception — no auth, no accounts, no analytics, no PII)
 - Add React, Vue, Svelte, or any UI framework
 - Add Tailwind or any CSS framework
 - Use real brand names (Uber Eats, Menulog, DoorDash). Parody names only: **GoorPeach, ChewSnog, GorgeRush**

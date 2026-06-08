@@ -18,3 +18,7 @@ Thumbs.db
 # Local env
 .env
 .env.local
+.dev.vars
+
+# Cloudflare / Wrangler local state (local D1 lives here)
+.wrangler/

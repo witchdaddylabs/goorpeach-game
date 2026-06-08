@@ -70,6 +70,7 @@ export const SCENES = {
   Boss: 'BossScene',
   GameOver: 'GameOverScene',
   Victory: 'VictoryScene',
+  Scoreboard: 'ScoreboardScene',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -91,6 +92,46 @@ export const AUDIO_PATHS = {
 export const STORAGE_KEYS = {
   highestUnlockedLevel: 'gp.unlocked',
   settings: 'gp.settings',
+  localScores: 'gp.localScores', // offline fallback cache — see systems/Scoreboard.ts
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Scoreboard + scoring                                                        */
+/*                                                                             */
+/* The leaderboard is a single global Top-N ranked on the final score of a     */
+/* full run, with classic 3-letter arcade initials. It is served by a          */
+/* Cloudflare Pages Function backed by D1 (see functions/api/scores.ts and     */
+/* docs/SCOREBOARD.md). All access goes through systems/Scoreboard.ts.         */
+/* -------------------------------------------------------------------------- */
+
+export const LEADERBOARD = {
+  /** Same-origin Pages Function route. */
+  apiPath: '/api/scores',
+  /** How many entries the board shows / the API returns. */
+  topN: 20,
+  /** Classic arcade initials length. */
+  initialsLength: 3,
+  /** Server-side sanity cap; submissions above this are rejected as bogus. */
+  maxScore: 1_000_000,
+  /** Levels are 1..5 (Richmond → Kew). */
+  minLevel: 1,
+  maxLevel: 5,
+} as const;
+
+/**
+ * Scoring model — config-driven so it can be tuned. systems/Score.ts tallies a
+ * run from these; DriveScene / BossScene feed it events during implementation.
+ * Points by courier brand reflect difficulty (ChewSnog e-bikes are tanky).
+ */
+export const SCORING = {
+  courierPoints: {
+    GoorPeach: 100, // scooter — fast, fragile
+    ChewSnog: 250, // e-bike — 2 HP, tanky
+    GorgeRush: 75, // pushbike — slow, swarms
+  },
+  levelClearBonus: 1000,
+  survivalBonusPerSecond: 10, // time left on the clock at level end
+  bossDefeatBonus: 5000,
 } as const;
 
 /* -------------------------------------------------------------------------- */

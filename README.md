@@ -12,8 +12,9 @@ tracking.
 
 - **Phaser 3** + **TypeScript** (strict)
 - **Vite** (build / dev server)
-- **localStorage** for persistence (settings, unlocked levels)
-- **Cloudflare Pages** for static hosting
+- **localStorage** for local persistence (settings, unlocked levels, offline scores)
+- **Cloudflare Pages** for static hosting, **Cloudflare D1** for the global
+  high-score board only (`/api/scores` Pages Function — see `docs/SCOREBOARD.md`)
 
 Built mobile-first and for touch, landscape-locked, with WCAG 2.1 base
 accessibility. See `CLAUDE.md` for the non-negotiable build rules and
@@ -55,7 +56,10 @@ fight, and a final polish pass — in that order.
 - `docs/SETUP.md` — environment setup and deployment.
 - `src/` — game source (scenes, entities, ui, data, systems) + `config.ts`
   (all constants) and `types.ts` (shared types).
+- `functions/` — Cloudflare Pages Functions (`/api/scores` high-score endpoint).
+- `migrations/` — D1 SQL migrations for the scoreboard.
 - `public/` — static assets (sprites, audio, fonts).
+- `docs/SCOREBOARD.md` — scoreboard architecture, API, and one-time D1 setup.
 - `CREDITS.md` — asset attribution log.
 
 ## Australian English
