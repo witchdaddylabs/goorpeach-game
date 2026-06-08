@@ -40,19 +40,21 @@ export class CreditsScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const body = CREDIT_LINES.join('\n');
-    this.add
-      .text(centerX, height * 0.2, body, {
+    const bodyText = this.add
+      .text(centerX, height * 0.17, body, {
         fontFamily: FONTS.mono,
         fontSize: width < 320 ? '7px' : '8px',
         color: COLOUR_HEX.text,
         align: 'center',
-        lineSpacing: 4,
+        lineSpacing: 3,
         wordWrap: { width: width - 32 },
       })
       .setOrigin(0.5, 0);
 
+    // Place BACK below the body, clamped above the bottom edge — never overlaps copy.
+    const backY = Math.min(bodyText.y + bodyText.height + height * 0.06, height * 0.95);
     const back = this.add
-      .text(centerX, height * 0.9, 'BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, backY, 'BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setColor(COLOUR_HEX.hazard));

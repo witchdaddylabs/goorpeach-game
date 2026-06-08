@@ -34,12 +34,13 @@ export class MenuScene extends Phaser.Scene {
     // Background
     this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
 
-    // Very minimal late-90s Melbourne skyline silhouette (hard rects, no gradients)
+    // Very minimal late-90s Melbourne skyline silhouette (hard rects, no gradients).
+    // Drawn first so the menu panel sits cleanly on top of it (skyline frames the sides).
     this.drawSkyline();
 
     // Big chunky title — Bungee + palette
     this.add
-      .text(centerX, height * 0.18, 'GOORPEACH', {
+      .text(centerX, height * 0.15, 'GOORPEACH', {
         fontFamily: 'Bungee',
         fontSize: '36px',
         color: COLOUR_HEX.text,
@@ -48,7 +49,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(centerX, height * 0.29, 'APOCALYPSE', {
+      .text(centerX, height * 0.24, 'APOCALYPSE', {
         fontFamily: 'Bungee',
         fontSize: '16px',
         color: COLOUR_HEX.hazard,
@@ -56,37 +57,34 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Tagline (dry, Australian, per BRIEF.md)
+    // Tagline (dry, Australian, per BRIEF.md) — smaller on narrow/portrait widths
     this.add
-      .text(centerX, height * 0.37, 'Richmond to Kew. Delivery riders. Ozempic. Trams.', {
+      .text(centerX, height * 0.31, 'Richmond to Kew. Delivery riders. Ozempic. Trams.', {
         fontFamily: 'JetBrains Mono',
-        fontSize: '9px',
+        fontSize: width < 360 ? '7px' : '9px',
         color: COLOUR_HEX.cyan,
         align: 'center',
       })
       .setOrigin(0.5);
 
-    // Buttons — large tap targets, chunky 90s style
-    const startY = height * 0.52;
-    const btnGap = height * 0.1;
-    this.createButton('START', startY, async () => {
-      await this.handleStart();
-    });
+    // Buttons — large tap targets, chunky 90s style.
+    // Lay them out inside a solid contained panel so the skyline never bleeds
+    // through and text stays readable (CLAUDE.md: fewer features, more polish).
+    const buttons: Array<[string, () => void]> = [
+      ['START', () => void this.handleStart()],
+      ['LEVEL SELECT', () => this.scene.start(SCENES.LevelSelect)],
+      ['HIGH SCORES', () => this.scene.start(SCENES.Scoreboard)],
+      ['SETTINGS', () => this.scene.start(SCENES.Settings)],
+      ['CREDITS', () => this.scene.start(SCENES.Credits)],
+    ];
 
-    this.createButton('LEVEL SELECT', startY + btnGap, () => {
-      this.scene.start(SCENES.LevelSelect);
-    });
+    const firstY = height * 0.5;
+    const btnGap = height * 0.09;
+    const lastY = firstY + btnGap * (buttons.length - 1);
+    this.drawButtonPanel(firstY, lastY);
 
-    this.createButton('HIGH SCORES', startY + btnGap * 2, () => {
-      this.scene.start(SCENES.Scoreboard);
-    });
-
-    this.createButton('SETTINGS', startY + btnGap * 3, () => {
-      this.scene.start(SCENES.Settings);
-    });
-
-    this.createButton('CREDITS', startY + btnGap * 4, () => {
-      this.scene.start(SCENES.Credits);
+    buttons.forEach(([label, onActivate], i) => {
+      this.createButton(label, firstY + btnGap * i, onActivate);
     });
 
     // Small mute toggle (top-right, touch friendly)
@@ -108,9 +106,9 @@ export class MenuScene extends Phaser.Scene {
       }
     });
 
-    // Status line (for unlock feedback and coming-soon messages)
+    // Status line (for unlock feedback) — sits above the button panel, clear of it.
     this.statusText = this.add
-      .text(centerX, height * 0.93, '', {
+      .text(centerX, height * 0.4, '', {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.bile,
@@ -119,7 +117,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Hint for first run (audio context)
-    this.statusText.setText('tap START to begin (unlocks audio)');
+    this.statusText.setText('tap START to begin — unlocks audio');
 
     // If someone arrives here with audio already in registry (rare on first load), reuse
     const existing = this.registry.get('audio') as Audio | undefined;
@@ -131,13 +129,34 @@ export class MenuScene extends Phaser.Scene {
     new CrtOverlay(this);
   }
 
+  /** Solid contained card behind the button column with a hazard accent bar. */
+  private drawButtonPanel(firstY: number, lastY: number): void {
+    const { width, centerX } = getLayout();
+    const btnW = Math.min(184, width - 24);
+    const panelW = btnW + 28;
+    const top = firstY - 16;
+    const bottom = lastY + 16;
+    const left = centerX - panelW / 2;
+
+    const g = this.add.graphics();
+    // Solid card, darker than the road, so buttons read crisply and the skyline
+    // behind never bleeds through (it frames the panel on the sides instead).
+    g.fillStyle(COLOURS.textDark, 1);
+    g.fillRect(left, top, panelW, bottom - top);
+    // Thin cyan border + hazard top accent (90s arcade cabinet trim)
+    g.lineStyle(1, COLOURS.cyan, 0.5);
+    g.strokeRect(left + 0.5, top + 0.5, panelW - 1, bottom - top - 1);
+    g.fillStyle(COLOURS.hazard, 1);
+    g.fillRect(left, top, panelW, 2);
+  }
+
   private drawSkyline(): void {
     const { width, height } = getLayout();
     const scale = width / 480;
     // Hard-edged building silhouettes using palette colours (footpath, hazard, tram body, magenta)
     // Bottom strip representing inner-Melbourne roofline
     const g = this.add.graphics();
-    const baseY = height * 0.78;
+    const baseY = height * 0.86;
 
     // Simple repeating blocks of different heights — very GTA1 / Micro Machines feel
     const blocks = [
@@ -170,10 +189,14 @@ export class MenuScene extends Phaser.Scene {
     const { width, centerX } = getLayout();
     const btnW = Math.min(184, width - 24);
 
-    // Background "plaque" (hard, no shadow — 90s style)
+    // Background "plaque" — raised slightly lighter than the card it sits on
+    const drawPlaque = (fill: number, alpha: number): void => {
+      bg.clear();
+      bg.fillStyle(fill, alpha);
+      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+    };
     const bg = this.add.graphics();
-    bg.fillStyle(COLOURS.textDark, 0.9);
-    bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+    drawPlaque(COLOURS.road, 1);
 
     const txt = this.add
       .text(centerX, y, label, {
@@ -188,16 +211,12 @@ export class MenuScene extends Phaser.Scene {
     // Hover / active feedback using cyan accent (UI highlight colour)
     txt.on('pointerover', () => {
       txt.setColor(COLOUR_HEX.cyan);
-      bg.clear();
-      bg.fillStyle(COLOURS.cyan, 0.15);
-      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+      drawPlaque(COLOURS.cyan, 0.22);
     });
 
     txt.on('pointerout', () => {
       txt.setColor(COLOUR_HEX.text);
-      bg.clear();
-      bg.fillStyle(COLOURS.textDark, 0.9);
-      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+      drawPlaque(COLOURS.road, 1);
     });
 
     txt.on('pointerdown', () => {

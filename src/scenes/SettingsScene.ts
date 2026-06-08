@@ -155,7 +155,7 @@ export class SettingsScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
 
     const value = this.add
-      .text(centerX, y, this.settings.touchInputMode.toUpperCase(), {
+      .text(centerX - 30, y, this.settings.touchInputMode.toUpperCase(), {
         fontFamily: FONTS.mono,
         fontSize: '10px',
         color: COLOUR_HEX.cyan,
@@ -163,7 +163,7 @@ export class SettingsScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.valueTexts.set('touchInputMode', value);
 
-    this.addStepBtn(centerX, y, 'SWITCH', () => {
+    this.addStepBtn(centerX + 48, y, 'SWITCH', () => {
       const next: TouchInputMode = this.settings.touchInputMode === 'joystick' ? 'swipe' : 'joystick';
       this.settings = Persistence.setSettings({ touchInputMode: next });
       value.setText(next.toUpperCase());

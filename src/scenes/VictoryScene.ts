@@ -46,10 +46,13 @@ export class VictoryScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.createButton('ENTER INITIALS', height * 0.69, () => {
+    const btn1Y = height * 0.69;
+    const btn2Y = height * 0.8;
+    this.drawButtonPanel(btn1Y, btn2Y);
+    this.createButton('ENTER INITIALS', btn1Y, () => {
       this.scene.start(SCENES.Scoreboard, { score: this.finalScore, levelReached: 5 });
     });
-    this.createButton('MENU', height * 0.8, () => this.scene.start(SCENES.Menu));
+    this.createButton('MENU', btn2Y, () => this.scene.start(SCENES.Menu));
 
     const audio = this.registry.get('audio') as Audio | undefined;
     if (audio && !audio.isMuted) {
@@ -106,18 +109,45 @@ export class VictoryScene extends Phaser.Scene {
     });
   }
 
+  /** Solid contained card behind the buttons so the skyline never bleeds through. */
+  private drawButtonPanel(firstY: number, lastY: number): void {
+    const { width, centerX } = getLayout();
+    const btnW = Math.min(184, width - 24);
+    const panelW = btnW + 28;
+    const top = firstY - 16;
+    const bottom = lastY + 16;
+    const left = centerX - panelW / 2;
+    const g = this.add.graphics();
+    g.fillStyle(COLOURS.textDark, 1);
+    g.fillRect(left, top, panelW, bottom - top);
+    g.lineStyle(1, COLOURS.cyan, 0.5);
+    g.strokeRect(left + 0.5, top + 0.5, panelW - 1, bottom - top - 1);
+    g.fillStyle(COLOURS.bile, 1);
+    g.fillRect(left, top, panelW, 2);
+  }
+
   private createButton(label: string, y: number, onActivate: () => void): void {
     const { width, centerX } = getLayout();
     const btnW = Math.min(184, width - 24);
     const bg = this.add.graphics();
-    bg.fillStyle(COLOURS.road, 0.9);
-    bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+    const draw = (fill: number, alpha: number): void => {
+      bg.clear();
+      bg.fillStyle(fill, alpha);
+      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+    };
+    draw(COLOURS.road, 1);
     const txt = this.add
       .text(centerX, y, label, { fontFamily: 'Bungee', fontSize: '12px', color: COLOUR_HEX.text })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    txt.on('pointerover', () => txt.setColor(COLOUR_HEX.cyan));
-    txt.on('pointerout', () => txt.setColor(COLOUR_HEX.text));
+    txt.on('pointerover', () => {
+      txt.setColor(COLOUR_HEX.cyan);
+      draw(COLOURS.cyan, 0.22);
+    });
+    txt.on('pointerout', () => {
+      txt.setColor(COLOUR_HEX.text);
+      draw(COLOURS.road, 1);
+    });
     txt.on('pointerup', onActivate);
   }
 }

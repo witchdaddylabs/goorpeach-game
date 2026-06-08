@@ -74,3 +74,7 @@ const config: Phaser.Types.Core.GameConfig = {
 // eslint-disable-next-line no-new -- Phaser.Game registers itself on construction.
 const game = new Phaser.Game(config);
 bindResponsiveLayout(game);
+
+if (import.meta.env.DEV) {
+  (window as unknown as { __GAME__: Phaser.Game }).__GAME__ = game;
+}
