@@ -16,7 +16,9 @@ All assets must be:
 ## Current status (downloaded & organized)
 - Kenney RPG Urban Pack (CC0): ~480+ individual tiles extracted to `kenney/` (roads, urban details, vehicles, markings — excellent base for our road tileset + generic cars).
 - OpenGameArt top-down vehicles pack (CC0): Several cars (Audi, Police, Ambulance with animation frames, Viper, Mini truck/van, Taxi, Truck, Car) in `vehicles/`.
-- OpenGameArt "Road_test.png": Large combined top-down road tileset image (direct download).
+- Note: the scrolling road is now drawn procedurally in DriveScene (palette
+  tokens, chunky GTA-1 look), so the large placeholder road bitmap was removed to
+  keep the build light. The `kenney/` tiles remain as a base for detailed road work.
 - These are raw public sources. You will still need to:
   - Slice / select the best tiles.
   - Recolour to our exact palette (hazard, bile, magenta, tramBody, etc.).

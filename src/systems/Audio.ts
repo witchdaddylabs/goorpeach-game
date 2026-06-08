@@ -74,7 +74,7 @@ export class Audio {
     this.muted = m;
     if (this.music) {
       // BaseSound typing in Phaser is loose; the concrete sound (WebAudio/HTML5) has setVolume
-      (this.music as any).setVolume(m ? 0 : this.musicVolume);
+      (this.music as unknown as { setVolume(v: number): void }).setVolume(m ? 0 : this.musicVolume);
     }
   }
 
@@ -86,7 +86,7 @@ export class Audio {
   setMusicVolume(v: number): void {
     this.musicVolume = Math.max(0, Math.min(1, v));
     if (this.music && !this.muted) {
-      (this.music as any).setVolume(this.musicVolume);
+      (this.music as unknown as { setVolume(v: number): void }).setVolume(this.musicVolume);
     }
   }
 
@@ -101,10 +101,10 @@ export class Audio {
   duck(factor = 0.3, restoreAfterMs = 650): void {
     if (!this.music || this.muted) return;
     const original = this.musicVolume;
-    (this.music as any).setVolume(original * factor);
+    (this.music as unknown as { setVolume(v: number): void }).setVolume(original * factor);
     window.setTimeout(() => {
       if (this.music && !this.muted) {
-        (this.music as any).setVolume(original);
+        (this.music as unknown as { setVolume(v: number): void }).setVolume(original);
       }
     }, restoreAfterMs);
   }

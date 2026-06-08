@@ -1,11 +1,13 @@
+import Phaser from 'phaser';
 import { Courier } from './Courier';
-import type { CourierBrand } from '../types';
 
 /**
- * PushbikeCourier — GorgeRush (magenta). Slow, swarms in clusters of 3–5, 1 HP.
- *
- * TODO: implement. See CLAUDE.md working pattern, step 7.
+ * PushbikeCourier — GorgeRush (magenta). Slow, swarms in clusters, 1 HP.
+ * Behaviour numbers come from COURIER.GorgeRush in config.ts; swarming is
+ * expressed by the level data spawning several at once.
  */
 export class PushbikeCourier extends Courier {
-  readonly brand: CourierBrand = 'GorgeRush';
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+    super(scene, x, y, texture, 'GorgeRush');
+  }
 }

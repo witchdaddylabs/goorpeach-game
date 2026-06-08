@@ -11,6 +11,16 @@ export type CourierBrand = 'GoorPeach' | 'ChewSnog' | 'GorgeRush';
 /** Power-up kinds (fixed spawns, no RNG — see docs/BRIEF.md). */
 export type PowerUpKind = 'ammo' | 'boost' | 'shield' | 'magpie';
 
+/**
+ * Per-frame steering intent. The scene merges keyboard and touch into this, so
+ * entities never branch on input source (CLAUDE.md rule 5).
+ */
+export interface SteerIntent {
+  left: boolean;
+  right: boolean;
+  brake: boolean;
+}
+
 /** A single courier spawn within a wave. TODO: expand (lane, delay, etc.). */
 export interface CourierSpawn {
   brand: CourierBrand;

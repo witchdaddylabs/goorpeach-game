@@ -36,6 +36,6 @@ export const LEVELS: LevelConfig[] = [
       { kind: 'ammo', triggerMs: 15000 },
       { kind: 'boost', triggerMs: 35000 },
     ],
-    backgroundTileset: 'roadTest',
+    backgroundTileset: 'procedural',
   },
 ];

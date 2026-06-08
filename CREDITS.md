@@ -21,11 +21,13 @@ Still recommended (itch.io "Name your own price = $0" — quick browser download
 
 (The above three require one browser visit each to download the zip/PNG after setting price to 0.)
 
-Real files dumped into public/sprites/ (organized under 2D TOP DOWN PIXEL CARS/, kenney/, vehicles/, plus Road_test.png and sprite25_0.png):
+Real files dumped into public/sprites/ (organized under 2D TOP DOWN PIXEL CARS/, kenney/, vehicles/, plus sprite25_0.png):
 
 - 2D Top Down Pixel Cars pack (marcusvh) — multiple colored sedans, compacts, coupes, sports cars, trucks. Used for playerClean + courier bases.
 - Kenney tiles (CC0) — 486 individual tiles in kenney/ (roads, urban, vehicles).
-- Road assets: sprite25_0.png (chasersgaming), Road_test.png (OpenGameArt).
+- Road assets: sprite25_0.png (chasersgaming). The scrolling road is drawn
+  procedurally from palette tokens, so the large OpenGameArt "Road_test.png"
+  placeholder was removed to keep the build light.
 - vehicles/ folder (additional top-down cars from OpenGameArt pack).
 
 Full adaptation (recolour to exact GoorPeach/ChewSnog/GorgeRush palette, correct sizes, animations, tram tracks, brand details) still needed per docs/ASSETS.md.
