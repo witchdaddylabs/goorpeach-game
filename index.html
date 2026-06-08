@@ -48,11 +48,41 @@
         -webkit-user-select: none;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      /* Landscape band (844×390 target) — edge-to-edge on touch, capped on desktop. */
+      #game-root.game-root--landscape,
+      body.layout-landscape #game-root {
+        inset: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(100vw, calc(100vh * 480 / 270));
+        height: min(100vh, calc(100vw * 270 / 480));
+      }
+      @media (pointer: fine) {
+        #game-root.game-root--landscape,
+        body.layout-landscape #game-root {
+          width: min(92vw, 844px, calc((100vh - 2rem) * 480 / 270));
+          height: min(calc(100vh - 2rem), 390px, calc(92vw * 270 / 480));
+        }
+      }
+      /* Portrait upright (390×844) — fully playable, no rotate blocker. */
+      #game-root.game-root--portrait,
+      body.layout-portrait #game-root {
+        inset: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(100vw, calc(100vh * 270 / 480));
+        height: min(100vh, calc(100vw * 480 / 270));
       }
       #game-root canvas {
         display: block;
         image-rendering: pixelated;
       }
+
       /* Visually-hidden text alternative for screen readers (WCAG 2.1). */
       .visually-hidden {
         position: absolute;
@@ -78,7 +108,7 @@
     <main
       id="game-root"
       role="application"
-      aria-label="GoorPeach Apocalypse, a top-down driving arcade game. Drive a Commodore from Richmond to Kew, dodging delivery couriers and rogue trams. Best played in landscape on a touch device."
+      aria-label="GoorPeach Apocalypse, a top-down driving arcade game. Drive a Commodore from Richmond to Kew, dodging delivery couriers and rogue trams. Playable in portrait or landscape on touch devices."
     >
       <p class="visually-hidden">
         GoorPeach Apocalypse is a top-down driving game. Steer your car to dodge

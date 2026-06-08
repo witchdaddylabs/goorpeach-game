@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { COLOURS, COLOUR_HEX, TOUCH } from '../config';
+import { COLOURS, COLOUR_HEX } from '../config';
+import { getLayout } from '../systems/Layout';
+import { Persistence } from '../systems/Persistence';
 import type { SteerIntent } from '../types';
 
 /**
@@ -15,6 +17,7 @@ export class TouchControls {
   private steerPointer: Phaser.Input.Pointer | null = null;
   private steerAnchorX = 0;
   private steerAnchorY = 0;
+  private lastSteerX = 0;
   private brakePointer: Phaser.Input.Pointer | null = null;
   private firePending = false;
 
@@ -25,8 +28,9 @@ export class TouchControls {
     scene.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     scene.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
 
-    if (TOUCH.showHints && scene.sys.game.device.input.touch) {
-      this.drawHints(scene);
+    const touch = getLayout().touch;
+    if (touch.showHints && scene.sys.game.device.input.touch) {
+      this.drawHints(scene, touch);
     }
   }
 
@@ -35,13 +39,15 @@ export class TouchControls {
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (TouchControls.inZone(pointer, TOUCH.fireZone)) {
+    const touch = getLayout().touch;
+    if (TouchControls.inZone(pointer, touch.fireZone)) {
       this.firePending = true;
-    } else if (TouchControls.inZone(pointer, TOUCH.steerZone)) {
+    } else if (TouchControls.inZone(pointer, touch.steerZone)) {
       this.steerPointer = pointer;
       this.steerAnchorX = pointer.x;
       this.steerAnchorY = pointer.y;
-    } else if (TouchControls.inZone(pointer, TOUCH.brakeZone)) {
+      this.lastSteerX = pointer.x;
+    } else if (TouchControls.inZone(pointer, touch.brakeZone)) {
       this.brakePointer = pointer;
     }
   }
@@ -53,13 +59,20 @@ export class TouchControls {
 
   /** Current steering intent from active touches. */
   getState(): SteerIntent {
+    const touch = getLayout().touch;
+    const settings = Persistence.getSettings();
+    const deadzone = touch.steerDeadzone / settings.touchSteerSensitivity;
     let left = false;
     let right = false;
 
     if (this.steerPointer && this.steerPointer.isDown) {
-      const dx = this.steerPointer.x - this.steerAnchorX;
-      if (dx < -TOUCH.steerDeadzone) left = true;
-      else if (dx > TOUCH.steerDeadzone) right = true;
+      const dx =
+        settings.touchInputMode === 'swipe'
+          ? this.steerPointer.x - this.lastSteerX
+          : this.steerPointer.x - this.steerAnchorX;
+      this.lastSteerX = this.steerPointer.x;
+      if (dx < -deadzone) left = true;
+      else if (dx > deadzone) right = true;
     } else {
       this.steerPointer = null;
     }
@@ -73,12 +86,15 @@ export class TouchControls {
    * where the player moves freely rather than steering in lanes.
    */
   getMoveVector(): { x: number; y: number } {
+    const touch = getLayout().touch;
+    const sensitivity = Persistence.getSettings().touchSteerSensitivity;
     if (this.steerPointer && this.steerPointer.isDown) {
       const dx = this.steerPointer.x - this.steerAnchorX;
       const dy = this.steerPointer.y - this.steerAnchorY;
+      const range = touch.moveRange / sensitivity;
       return {
-        x: Phaser.Math.Clamp(dx / TOUCH.moveRange, -1, 1),
-        y: Phaser.Math.Clamp(dy / TOUCH.moveRange, -1, 1),
+        x: Phaser.Math.Clamp(dx / range, -1, 1),
+        y: Phaser.Math.Clamp(dy / range, -1, 1),
       };
     }
     this.steerPointer = null;
@@ -92,14 +108,17 @@ export class TouchControls {
     return fired;
   }
 
-  private drawHints(scene: Phaser.Scene): void {
+  private drawHints(
+    scene: Phaser.Scene,
+    touch: ReturnType<typeof getLayout>['touch'],
+  ): void {
     const g = scene.add.graphics();
-    g.fillStyle(COLOURS.cyan, TOUCH.hintAlpha);
-    g.fillRect(TOUCH.steerZone.x, TOUCH.steerZone.y, TOUCH.steerZone.w, TOUCH.steerZone.h);
-    g.fillStyle(COLOURS.caution, TOUCH.hintAlpha);
-    g.fillRect(TOUCH.brakeZone.x, TOUCH.brakeZone.y, TOUCH.brakeZone.w, TOUCH.brakeZone.h);
-    g.fillStyle(COLOURS.hazard, TOUCH.hintAlpha);
-    g.fillRect(TOUCH.fireZone.x, TOUCH.fireZone.y, TOUCH.fireZone.w, TOUCH.fireZone.h);
+    g.fillStyle(COLOURS.cyan, touch.hintAlpha);
+    g.fillRect(touch.steerZone.x, touch.steerZone.y, touch.steerZone.w, touch.steerZone.h);
+    g.fillStyle(COLOURS.caution, touch.hintAlpha);
+    g.fillRect(touch.brakeZone.x, touch.brakeZone.y, touch.brakeZone.w, touch.brakeZone.h);
+    g.fillStyle(COLOURS.hazard, touch.hintAlpha);
+    g.fillRect(touch.fireZone.x, touch.fireZone.y, touch.fireZone.w, touch.fireZone.h);
 
     const tag = (x: number, y: number, s: string): void => {
       scene.add
@@ -107,8 +126,8 @@ export class TouchControls {
         .setOrigin(0.5)
         .setAlpha(0.5);
     };
-    tag(TOUCH.steerZone.x + TOUCH.steerZone.w / 2, TOUCH.steerZone.y + 12, 'DRAG TO STEER');
-    tag(TOUCH.brakeZone.x + TOUCH.brakeZone.w / 2, TOUCH.brakeZone.y + 12, 'BRAKE');
-    tag(TOUCH.fireZone.x + TOUCH.fireZone.w / 2, TOUCH.fireZone.y + 12, 'TAP FIRE');
+    tag(touch.steerZone.x + touch.steerZone.w / 2, touch.steerZone.y + 12, 'DRAG TO STEER');
+    tag(touch.brakeZone.x + touch.brakeZone.w / 2, touch.brakeZone.y + 12, 'BRAKE');
+    tag(touch.fireZone.x + touch.fireZone.w / 2, touch.fireZone.y + 12, 'TAP FIRE');
   }
 }

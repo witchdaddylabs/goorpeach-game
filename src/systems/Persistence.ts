@@ -1,5 +1,9 @@
-import { STORAGE_KEYS } from '../config';
-import type { ScoreEntry } from '../types';
+import { SETTINGS, STORAGE_KEYS } from '../config';
+import type { GameSettings, ScoreEntry } from '../types';
+
+function osPrefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 /**
  * Persistence — the ONLY place raw localStorage is touched (CLAUDE.md rule 4).
@@ -50,5 +54,22 @@ export class Persistence {
     }
   }
 
-  // TODO: getSettings/setSettings.
+  static getSettings(): GameSettings {
+    const fallback: GameSettings = {
+      soundVolume: SETTINGS.soundVolume,
+      musicVolume: SETTINGS.musicVolume,
+      crtScanlines: SETTINGS.crtScanlines,
+      reducedMotion: osPrefersReducedMotion(),
+      touchSteerSensitivity: SETTINGS.touchSteerSensitivity,
+      touchInputMode: SETTINGS.touchInputMode,
+    };
+    const stored = Persistence.read<Partial<GameSettings>>(STORAGE_KEYS.settings, {});
+    return { ...fallback, ...stored };
+  }
+
+  static setSettings(patch: Partial<GameSettings>): GameSettings {
+    const next = { ...Persistence.getSettings(), ...patch };
+    Persistence.write(STORAGE_KEYS.settings, next);
+    return next;
+  }
 }

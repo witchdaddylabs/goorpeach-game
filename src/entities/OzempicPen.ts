@@ -1,38 +1,37 @@
 import Phaser from 'phaser';
 import { PEN } from '../config';
+import { getLayout } from '../systems/Layout';
 
 /**
- * OzempicPen — the player's projectile. Generous against couriers when fired
- * (CLAUDE.md rule 9 — see Courier.getHitBounds). Ammo is limited and topped up
- * by power-ups. Tuning from PEN in config.ts. Uses a tinted proxy until a
- * dedicated pen sprite lands.
+ * OzempicPen — the player's projectile. A small cyan capsule (not a car sprite).
+ * Generous against couriers when fired (CLAUDE.md rule 9). Tuning from PEN.
  */
 export class OzempicPen {
-  readonly sprite: Phaser.Physics.Arcade.Sprite;
+  private readonly body: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.sprite = scene.physics.add.sprite(x, y, 'playerClean');
-    this.sprite.setScale(PEN.scaleX, PEN.scaleY);
-    this.sprite.setTint(PEN.tint);
-    this.sprite.setOrigin(0.5, 0.5);
-    this.sprite.setVelocityY(-PEN.speed); // negative y = up the screen
-    this.sprite.setCollideWorldBounds(false);
+    this.body = scene.add.rectangle(x, y, PEN.width, PEN.height, PEN.colour);
+    this.body.setStrokeStyle(1, 0xffffff, 0.6);
   }
 
   getBounds(): Phaser.Geom.Rectangle {
-    return this.sprite.getBounds();
+    return this.body.getBounds();
   }
 
   get active(): boolean {
-    return !!this.sprite && this.sprite.active;
+    return this.body.active;
   }
 
   /** True once it has flown off the top of the play area. */
   get offscreen(): boolean {
-    return this.sprite.y < PEN.despawnY;
+    return this.body.y < getLayout().road.topY - 4;
+  }
+
+  update(delta: number): void {
+    this.body.y -= PEN.speed * (delta / 1000);
   }
 
   destroy(): void {
-    if (this.sprite?.active) this.sprite.destroy();
+    if (this.body.active) this.body.destroy();
   }
 }

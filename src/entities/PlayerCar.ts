@@ -1,13 +1,10 @@
 import Phaser from 'phaser';
-import { PLAYER, ROAD } from '../config';
+import { PLAYER } from '../config';
+import { getLayout } from '../systems/Layout';
 import type { SteerIntent } from '../types';
 
 /**
- * PlayerCar — the VN Commodore. Steering, braking, and (later) three damage
- * states. Player-favouring hitbox (CLAUDE.md rule 9). All numbers from config.ts.
- *
- * Input-agnostic: the scene passes a SteerIntent each frame built from keyboard
- * and/or touch, so this entity never reads the keyboard directly (rule 5).
+ * PlayerCar — the VN Commodore. Braking slows world scroll via getSpeedRatio().
  */
 export class PlayerCar {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
@@ -21,26 +18,44 @@ export class PlayerCar {
   hasShield = false;
   boostEndTime = 0;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, maxSpeed: number) {
     this.scene = scene;
+    this.maxSpeed = maxSpeed;
     this.sprite = scene.physics.add.sprite(x, y, texture);
     this.sprite.setScale(PLAYER.scale);
     this.sprite.setOrigin(0.5, 0.5);
+    this.sprite.setDepth(10);
 
     this.sprite.body?.setSize(
       this.sprite.width - PLAYER.hitboxPadding * 2,
       this.sprite.height - PLAYER.hitboxPadding * 2,
     );
 
-    this.maxSpeed = PLAYER.forwardSpeed;
     this.currentSpeed = this.maxSpeed;
     this.steerSpeed = PLAYER.steerSpeed;
     this.lives = PLAYER.startingLives;
+    this.applyDamageVisual();
+  }
+
+  /** Progressive Commodore damage — worn sprite, then hazard tint on last heart. */
+  applyDamageVisual(): void {
+    const sprite = this.sprite;
+    if (this.lives >= PLAYER.wornBelowLives) {
+      sprite.setTexture(PLAYER.textures.clean);
+      sprite.clearTint();
+    } else if (this.lives > PLAYER.criticalLives) {
+      sprite.setTexture(PLAYER.textures.worn);
+      sprite.clearTint();
+    } else {
+      sprite.setTexture(PLAYER.textures.worn);
+      sprite.setTint(PLAYER.hitFlashTint);
+    }
   }
 
   update(delta: number, now: number, intent: SteerIntent): void {
     const dt = delta / 1000;
     const sprite = this.sprite;
+    const { road, player, width } = getLayout();
 
     const speedMult = now < this.boostEndTime ? PLAYER.boostMultiplier : 1.0;
     const effectiveSteer = this.steerSpeed * speedMult;
@@ -48,18 +63,25 @@ export class PlayerCar {
     if (intent.left) sprite.x -= effectiveSteer * dt;
     if (intent.right) sprite.x += effectiveSteer * dt;
 
+    const brakeFloor = this.maxSpeed * PLAYER.brakeMinRatio;
+
     if (intent.brake) {
-      this.currentSpeed = Math.max(this.maxSpeed * PLAYER.brakeMultiplier, 40);
+      this.currentSpeed = Phaser.Math.Linear(this.currentSpeed, brakeFloor, PLAYER.brakeDecay);
     } else {
-      this.currentSpeed = Phaser.Math.Linear(this.currentSpeed, this.maxSpeed, 0.08);
+      this.currentSpeed = Phaser.Math.Linear(this.currentSpeed, this.maxSpeed, PLAYER.accelRate);
     }
 
-    const targetY = 135 + (this.currentSpeed - this.maxSpeed) * 0.1;
-    sprite.y = Phaser.Math.Linear(sprite.y, targetY, 0.1);
+    const ratio = this.getSpeedRatio();
+    const targetY = Phaser.Math.Linear(player.brakeY, player.cruiseY, ratio);
+    sprite.y = Phaser.Math.Linear(sprite.y, targetY, PLAYER.yLerp);
 
     const halfW = sprite.displayWidth / 2;
-    sprite.x = Phaser.Math.Clamp(sprite.x, ROAD.footpathWidth + halfW, 480 - ROAD.footpathWidth - halfW);
-    sprite.y = Phaser.Math.Clamp(sprite.y, 70, 200);
+    sprite.x = Phaser.Math.Clamp(sprite.x, road.footpathWidth + halfW, width - road.footpathWidth - halfW);
+    sprite.y = Phaser.Math.Clamp(sprite.y, player.cruiseY - 8, player.brakeY);
+  }
+
+  getSpeedRatio(): number {
+    return Phaser.Math.Clamp(this.currentSpeed / this.maxSpeed, PLAYER.brakeMinRatio, 1);
   }
 
   getSpeed(): number {
@@ -69,18 +91,19 @@ export class PlayerCar {
   takeDamage(): boolean {
     if (this.hasShield) {
       this.hasShield = false;
-      this.sprite.setTint(0x88ff88);
-      this.scene.time.delayedCall(300, () => {
-        if (this.sprite?.active) this.sprite.clearTint();
+      this.sprite.setTint(PLAYER.shieldTint);
+      this.scene.time.delayedCall(PLAYER.shieldFlashMs, () => {
+        if (this.sprite?.active) this.applyDamageVisual();
       });
       return false;
     }
 
     this.lives -= 1;
-    this.sprite.setTint(0xffaaaa);
-    this.scene.time.delayedCall(250, () => {
-      if (this.sprite?.active) this.sprite.clearTint();
+    this.sprite.setTint(PLAYER.hitFlashTint);
+    this.scene.time.delayedCall(PLAYER.hitFlashMs, () => {
+      if (this.sprite?.active) this.applyDamageVisual();
     });
+    this.applyDamageVisual();
     return this.lives <= 0;
   }
 
@@ -94,7 +117,7 @@ export class PlayerCar {
 
   applyShield(): void {
     this.hasShield = true;
-    this.sprite.setTint(0x88ff88);
+    this.sprite.setTint(PLAYER.shieldTint);
   }
 
   canFire(): boolean {

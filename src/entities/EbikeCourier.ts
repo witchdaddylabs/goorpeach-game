@@ -1,12 +1,9 @@
 import Phaser from 'phaser';
 import { Courier } from './Courier';
 
-/**
- * EbikeCourier — ChewSnog (bile green). Tanky, holds its lane, 2 HP.
- * Behaviour numbers come from COURIER.ChewSnog in config.ts.
- */
+/** EbikeCourier — ChewSnog (bile green). Tanky, holds lane, 2 HP. */
 export class EbikeCourier extends Courier {
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-    super(scene, x, y, texture, 'ChewSnog');
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'ChewSnog');
   }
 }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX, LEADERBOARD } from '../config';
 import { Scoreboard } from '../systems/Scoreboard';
+import { getLayout } from '../systems/Layout';
 import type { ScoreEntry } from '../types';
 
 /** Data passed in when arriving from a finished run. */
@@ -43,12 +44,13 @@ export class ScoreboardScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.rectangle(240, 135, 480, 270, COLOURS.textDark).setOrigin(0.5);
+    const { width, height, centerX, centerY } = getLayout();
+    this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
     this.add
-      .text(240, 22, 'GLOBAL TOP 20', { fontFamily: 'Bungee', fontSize: '18px', color: COLOUR_HEX.cyan })
+      .text(centerX, height * 0.08, 'GLOBAL TOP 20', { fontFamily: 'Bungee', fontSize: '18px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5);
     this.statusText = this.add
-      .text(240, 250, 'loading board…', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.text })
+      .text(centerX, height * 0.93, 'loading board…', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.text })
       .setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', this.onKey, this);
@@ -72,36 +74,41 @@ export class ScoreboardScene extends Phaser.Scene {
   private showEntry(): void {
     this.phase = 'entry';
     this.layer?.destroy();
+    const { width, height, centerX, centerY } = getLayout();
     const layer = this.add.container(0, 0);
     this.layer = layer;
 
+    const slotGap = width < 320 ? 34 : 40;
+    const blockTop = centerY - height * 0.12;
+    const startX = centerX - ((LEADERBOARD.initialsLength - 1) * slotGap) / 2;
+
     layer.add(
       this.add
-        .text(240, 70, `YOU MADE THE BOARD — ${this.pendingScore}`, {
+        .text(centerX, blockTop - 42, `YOU MADE THE BOARD — ${this.pendingScore}`, {
           fontFamily: 'JetBrains Mono',
-          fontSize: '9px',
+          fontSize: width < 320 ? '8px' : '9px',
           color: COLOUR_HEX.bile,
+          align: 'center',
+          wordWrap: { width: width - 24 },
         })
         .setOrigin(0.5),
     );
 
-    const startX = 200;
-    const gap = 40;
     this.slotTexts = [];
     for (let i = 0; i < LEADERBOARD.initialsLength; i++) {
-      const x = startX + i * gap;
+      const x = startX + i * slotGap;
       const up = this.add
-        .text(x, 110, '▲', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
+        .text(x, blockTop, '▲', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
       up.on('pointerup', () => this.changeLetter(i, +1));
 
       const slot = this.add
-        .text(x, 135, 'A', { fontFamily: 'Bungee', fontSize: '26px', color: COLOUR_HEX.text })
+        .text(x, blockTop + 26, 'A', { fontFamily: 'Bungee', fontSize: width < 320 ? '22px' : '26px', color: COLOUR_HEX.text })
         .setOrigin(0.5);
 
       const down = this.add
-        .text(x, 160, '▼', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
+        .text(x, blockTop + 52, '▼', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
       down.on('pointerup', () => this.changeLetter(i, -1));
@@ -111,13 +118,13 @@ export class ScoreboardScene extends Phaser.Scene {
     }
 
     const confirm = this.add
-      .text(240, 195, 'CONFIRM', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.caution })
+      .text(centerX, blockTop + 88, 'CONFIRM', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.caution })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     confirm.on('pointerup', () => void this.submit());
     layer.add(confirm);
 
-    this.statusText.setText('▲▼ or tap to set • ←→ to move • ENTER to confirm');
+    this.statusText.setText('▲▼ tap letters • ←→ move • CONFIRM when done');
     this.renderSlots();
   }
 
@@ -179,13 +186,14 @@ export class ScoreboardScene extends Phaser.Scene {
   private showBoard(entries: ScoreEntry[], highlight: { initials: string; score: number } | null): void {
     this.phase = 'board';
     this.layer?.destroy();
+    const { width, height, centerX } = getLayout();
     const layer = this.add.container(0, 0);
     this.layer = layer;
 
     if (entries.length === 0) {
       layer.add(
         this.add
-          .text(240, 130, 'No scores yet. Be the first.', {
+          .text(centerX, height * 0.45, 'No scores yet. Be the first.', {
             fontFamily: 'JetBrains Mono',
             fontSize: '9px',
             color: COLOUR_HEX.text,
@@ -194,28 +202,37 @@ export class ScoreboardScene extends Phaser.Scene {
       );
     }
 
-    const startY = 56;
-    const step = 16;
+    const portrait = width < 320;
+    const startY = height * 0.16;
+    const step = portrait ? 14 : 16;
+
     entries.slice(0, LEADERBOARD.topN).forEach((e, i) => {
-      const col = i < 10 ? 0 : 1;
-      const row = i % 10;
-      const x = col === 0 ? 60 : 250;
-      const y = startY + row * step;
+      let x: number;
+      let y: number;
+      if (portrait) {
+        x = centerX;
+        y = startY + i * step;
+      } else {
+        const col = i < 10 ? 0 : 1;
+        const row = i % 10;
+        x = col === 0 ? width * 0.14 : width * 0.54;
+        y = startY + row * step;
+      }
       const isMine = highlight !== null && e.initials === highlight.initials && e.score === highlight.score;
       const line = `${String(i + 1).padStart(2, ' ')}. ${e.initials}  ${String(e.score).padStart(6, ' ')}`;
       layer.add(
         this.add
           .text(x, y, line, {
             fontFamily: 'JetBrains Mono',
-            fontSize: '9px',
+            fontSize: portrait ? '8px' : '9px',
             color: isMine ? COLOUR_HEX.caution : COLOUR_HEX.text,
           })
-          .setOrigin(0, 0.5),
+          .setOrigin(portrait ? 0.5 : 0, 0.5),
       );
     });
 
     const menu = this.add
-      .text(240, 230, 'MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, height * 0.86, 'MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     menu.on('pointerup', () => this.scene.start(SCENES.Menu));

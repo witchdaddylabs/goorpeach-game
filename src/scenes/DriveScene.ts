@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, ROAD, TRAM, POWERUP, MESSAGES } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, TRAM, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
+import { getLayout } from '../systems/Layout';
 import { LEVELS } from '../data/levels';
 import { PlayerCar } from '../entities/PlayerCar';
 import { OzempicPen } from '../entities/OzempicPen';
@@ -8,10 +9,14 @@ import { ScooterCourier } from '../entities/ScooterCourier';
 import { EbikeCourier } from '../entities/EbikeCourier';
 import { PushbikeCourier } from '../entities/PushbikeCourier';
 import { PowerUp } from '../entities/PowerUp';
-import { Tram } from '../entities/Tram';
+import { Tram, type TramDirection } from '../entities/Tram';
 import { TramWarning } from '../entities/TramWarning';
 import { HUD } from '../ui/HUD';
+import { CrtOverlay } from '../ui/CrtOverlay';
+import { PauseOverlay } from '../ui/PauseOverlay';
 import { TouchControls } from '../ui/TouchControls';
+import { Particles } from '../systems/Particles';
+import { ScreenShake } from '../systems/ScreenShake';
 import type { CourierBrand, PowerUpKind, SteerIntent } from '../types';
 import { Score } from '../systems/Score';
 import { Audio } from '../systems/Audio';
@@ -28,12 +33,16 @@ export class DriveScene extends Phaser.Scene {
   private player!: PlayerCar;
   private hud!: HUD;
   private touch!: TouchControls;
+  private pauseOverlay!: PauseOverlay;
+  private paused = false;
   private levelData!: (typeof LEVELS)[number];
 
   private timeLeft = 0;
   private scrollSpeed = 0;
   private roadBase!: Phaser.GameObjects.Graphics;
   private roadLines!: Phaser.GameObjects.Graphics;
+  private landmarkGfx!: Phaser.GameObjects.Graphics;
+  private landmarkLabel!: Phaser.GameObjects.Text;
   private roadScroll = 0;
 
   private pens: OzempicPen[] = [];
@@ -52,11 +61,13 @@ export class DriveScene extends Phaser.Scene {
   private keyD?: Phaser.Input.Keyboard.Key;
   private keyS?: Phaser.Input.Keyboard.Key;
   private fireKey?: Phaser.Input.Keyboard.Key;
+  private pauseKey?: Phaser.Input.Keyboard.Key;
 
   // Predictable spawn cursors
   private nextCourierWaveIndex = 0;
   private nextPowerupIndex = 0;
   private nextTramIndex = 0;
+  private tramTimers: Phaser.Time.TimerEvent[] = [];
 
   private levelId = 1;
   private endingRun = false;
@@ -73,10 +84,9 @@ export class DriveScene extends Phaser.Scene {
   }
 
   create(): void {
-    const cx = 240;
-    const cy = 135;
+    const { width, centerX, road, player } = getLayout();
 
-    this.physics.world.setBounds(0, ROAD.topY, 480, ROAD.bottomY - ROAD.topY);
+    this.physics.world.setBounds(0, road.topY, width, road.bottomY - road.topY);
 
     const level = LEVELS.find((l) => l.id === this.levelId);
     if (!level) {
@@ -100,24 +110,67 @@ export class DriveScene extends Phaser.Scene {
     this.nextCourierWaveIndex = 0;
     this.nextPowerupIndex = 0;
     this.nextTramIndex = 0;
+    this.tramTimers = [];
     this.lastFireTime = 0;
     this.roadScroll = 0;
     this.endingRun = false;
+    this.paused = false;
+    this.time.timeScale = 1;
+    this.physics.resume();
 
     // Procedural road (palette tokens, chunky GTA-1 look — no heavy bitmap)
     this.roadBase = this.add.graphics();
     this.drawRoadBase();
     this.roadLines = this.add.graphics();
+    this.landmarkGfx = this.add.graphics().setDepth(2);
+    this.landmarkLabel = this.add
+      .text(0, 0, '', { fontFamily: 'JetBrains Mono', fontSize: '5px', color: COLOUR_HEX.text })
+      .setDepth(2)
+      .setOrigin(0.5, 0)
+      .setVisible(false);
 
     this.hud = new HUD(this, level.name);
-    this.player = new PlayerCar(this, cx, cy + 55, 'playerClean');
+    this.player = new PlayerCar(this, centerX, player.cruiseY, 'playerClean', level.scrollSpeed);
     this.touch = new TouchControls(this);
+    this.pauseOverlay = new PauseOverlay(this, {
+      onResume: () => this.togglePause(false),
+      onRestart: () => this.restartLevel(),
+      onQuit: () => this.quitToMenu(),
+      getMuted: () => this.audio?.isMuted ?? false,
+      onMuteToggle: () => {
+        const muted = this.audio?.toggleMute() ?? false;
+        if (muted) this.audio?.stopMusic();
+        else this.playMusic('drivingLoopA');
+      },
+    });
 
     this.audio = this.registry.get('audio') as Audio | undefined;
+    if (this.audio) {
+      const settings = Persistence.getSettings();
+      this.audio.setMusicVolume(settings.musicVolume);
+      this.audio.setSfxVolume(settings.soundVolume);
+    }
     this.playMusic('drivingLoopA');
 
+    new CrtOverlay(this);
+    this.addPauseButton();
     this.setupKeyboard();
     this.refreshHud();
+  }
+
+  private addPauseButton(): void {
+    const btn = this.add
+      .text(16, 14, 'II', {
+        fontFamily: 'Bungee',
+        fontSize: '12px',
+        color: COLOUR_HEX.text,
+        backgroundColor: COLOUR_HEX.textDark,
+      })
+      .setOrigin(0, 0)
+      .setPadding(4, 6, 4, 6)
+      .setDepth(5000)
+      .setInteractive({ useHandCursor: true });
+    btn.on('pointerup', () => this.togglePause());
   }
 
   private setupKeyboard(): void {
@@ -128,13 +181,40 @@ export class DriveScene extends Phaser.Scene {
     this.keyD = kb.addKey('D');
     this.keyS = kb.addKey('S');
     this.fireKey = kb.addKey('SPACE');
-    // P quits to menu for now (a proper PauseOverlay comes later).
-    kb.on('keydown-P', () => {
-      if (this.endingRun) return;
-      this.endingRun = true;
-      this.audio?.stopMusic();
-      this.scene.start(SCENES.Menu);
-    });
+    this.pauseKey = kb.addKey('P');
+  }
+
+  private togglePause(force?: boolean): void {
+    if (this.endingRun) return;
+    const next = force ?? !this.paused;
+    this.paused = next;
+    if (next) {
+      this.pauseOverlay.show();
+      this.physics.pause();
+      this.time.timeScale = 0;
+    } else {
+      this.pauseOverlay.hide();
+      this.physics.resume();
+      this.time.timeScale = 1;
+    }
+  }
+
+  private restartLevel(): void {
+    if (this.endingRun) return;
+    this.cleanupHazards();
+    this.pauseOverlay.hide();
+    this.paused = false;
+    this.time.timeScale = 1;
+    this.physics.resume();
+    this.scene.restart({ levelId: this.levelId, score: this.levelStartScore });
+  }
+
+  private quitToMenu(): void {
+    if (this.endingRun) return;
+    this.endingRun = true;
+    this.cleanupHazards();
+    this.audio?.stopMusic();
+    this.scene.start(SCENES.Menu);
   }
 
   /** Merge keyboard and touch into a single intent (rule 5). */
@@ -150,11 +230,20 @@ export class DriveScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (!this.player || this.endingRun) return;
 
+    if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
+      this.togglePause();
+      return;
+    }
+
+    if (this.paused) return;
+
     this.player.update(delta, Date.now(), this.buildIntent());
 
-    // Scrolling road
-    this.roadScroll += this.scrollSpeed * (delta / 1000);
+    // Scrolling road — tied to brake (S / ↓ / hold brake zone)
+    const effectiveScroll = this.scrollSpeed * this.player.getSpeedRatio();
+    this.roadScroll += effectiveScroll * (delta / 1000);
     this.drawRoadLines();
+    this.drawLandmark();
 
     // Firing — keyboard held or a touch tap; touch only consumed off cooldown so taps aren't dropped
     const offCooldown = time - this.lastFireTime > this.fireCooldown;
@@ -165,10 +254,10 @@ export class DriveScene extends Phaser.Scene {
       this.lastFireTime = time;
     }
 
-    this.updatePens();
+    this.updatePens(delta);
     this.runSpawns();
     this.updateCouriers(delta);
-    this.updatePowerups();
+    this.updatePowerups(delta, effectiveScroll);
     this.updateTrams(delta);
 
     this.timeLeft -= delta / 1000;
@@ -179,17 +268,24 @@ export class DriveScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  private updatePens(): void {
+  private updatePens(delta: number): void {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (!pen || !pen.active || pen.offscreen) {
+      if (!pen || !pen.active) {
         pen?.destroy();
+        this.pens.splice(i, 1);
+        continue;
+      }
+      pen.update(delta);
+      if (pen.offscreen) {
+        pen.destroy();
         this.pens.splice(i, 1);
       }
     }
   }
 
   private runSpawns(): void {
+    const { road } = getLayout();
     const elapsed = this.levelData.durationMs - this.timeLeft * 1000;
 
     while (
@@ -198,8 +294,9 @@ export class DriveScene extends Phaser.Scene {
     ) {
       const wave = this.levelData.courierWaves[this.nextCourierWaveIndex];
       wave?.spawns.forEach((spawn, idx) => {
-        const x = ROAD.laneXs[idx % ROAD.laneXs.length] ?? 240;
-        this.couriers.push(this.spawnCourier(spawn.brand, x, 30));
+        const x = road.laneXs[idx % road.laneXs.length] ?? getLayout().centerX;
+        const y = road.topY + COURIER.spawnInsetY;
+        this.couriers.push(this.spawnCourier(spawn.brand, x, y));
       });
       this.nextCourierWaveIndex += 1;
     }
@@ -209,9 +306,10 @@ export class DriveScene extends Phaser.Scene {
       elapsed >= (this.levelData.powerUpSpawns[this.nextPowerupIndex]?.triggerMs ?? Infinity)
     ) {
       const p = this.levelData.powerUpSpawns[this.nextPowerupIndex];
-      const idx = this.nextPowerupIndex % ROAD.laneXs.length;
-      const px = ROAD.laneXs[idx] ?? 240;
-      if (p) this.powerups.push(new PowerUp(this, px, 90 + idx * 25, p.kind));
+      const idx = this.nextPowerupIndex % road.laneXs.length;
+      const px = road.laneXs[idx % road.laneXs.length] ?? getLayout().centerX;
+      const py = road.topY - POWERUP.spawnAboveRoad;
+      if (p) this.powerups.push(new PowerUp(this, px, py, p.kind));
       this.nextPowerupIndex += 1;
     }
 
@@ -225,18 +323,18 @@ export class DriveScene extends Phaser.Scene {
   private spawnCourier(brand: CourierBrand, x: number, y: number): Courier {
     switch (brand) {
       case 'GoorPeach':
-        return new ScooterCourier(this, x, y, 'courierScooter');
+        return new ScooterCourier(this, x, y);
       case 'ChewSnog':
-        return new EbikeCourier(this, x, y, 'courierEbike');
+        return new EbikeCourier(this, x, y);
       case 'GorgeRush':
-        return new PushbikeCourier(this, x, y, 'courierPushbike');
+        return new PushbikeCourier(this, x, y);
     }
   }
 
   private updateCouriers(delta: number): void {
     for (let i = this.couriers.length - 1; i >= 0; i--) {
       const c = this.couriers[i];
-      if (!c || !c.active || c.sprite.y > 300) {
+      if (!c || !c.active || c.sprite.y > getLayout().height + 20) {
         c?.destroy();
         this.couriers.splice(i, 1);
         continue;
@@ -252,11 +350,12 @@ export class DriveScene extends Phaser.Scene {
           pen.destroy();
           this.pens.splice(p, 1);
           if (c.hit()) {
+            Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
             this.score.addCourier(c.brand);
             c.destroy();
             this.couriers.splice(i, 1);
             killed = true;
-            this.playSfx('courierCrash', 0.8);
+            this.audio?.playCourierCrash(0.8);
           }
           break;
         }
@@ -269,6 +368,7 @@ export class DriveScene extends Phaser.Scene {
         c.destroy();
         this.couriers.splice(i, 1);
         this.playSfx('heartLost', 0.9);
+        ScreenShake.courierHit(this);
         if (dead) {
           this.gameOver('courier');
           return;
@@ -277,10 +377,16 @@ export class DriveScene extends Phaser.Scene {
     }
   }
 
-  private updatePowerups(): void {
+  private updatePowerups(delta: number, effectiveScroll: number): void {
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (!p || !p.active) {
+        this.powerups.splice(i, 1);
+        continue;
+      }
+      p.update(delta, effectiveScroll);
+      if (p.offscreen) {
+        p.destroy();
         this.powerups.splice(i, 1);
         continue;
       }
@@ -304,7 +410,9 @@ export class DriveScene extends Phaser.Scene {
       if (tram.offscreen) {
         tram.destroy();
         this.trams.splice(i, 1);
-      } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), tram.getBounds())) {
+      } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), tram.getHitBounds())) {
+        Particles.burst(this, this.player.sprite.x, this.player.sprite.y, 'tramSparks');
+        ScreenShake.tramDeath(this);
         this.gameOver('tram');
         return;
       }
@@ -340,19 +448,47 @@ export class DriveScene extends Phaser.Scene {
     }
   }
 
-  private spawnTram(): void {
-    const warning = new TramWarning(this);
-    this.tramWarnings.push(warning);
-    this.playSfx('tramBell', 1.0);
-    this.audio?.duck();
+  /** Fixed cross-street depth — ahead of cruise lane; brake drops you clear. */
+  private tramCrossY(): number {
+    return getLayout().player.cruiseY - TRAM.crossAheadOffset;
+  }
 
-    this.time.delayedCall(TRAM.warningMs, () => {
-      if (!this.scene.isActive()) return;
-      const idx = this.tramWarnings.indexOf(warning);
-      if (idx >= 0) this.tramWarnings.splice(idx, 1);
-      warning.destroy();
-      this.trams.push(new Tram(this));
+  /** Tram body crosses — ding first, then duck driving music under it. */
+  private arriveTram(warning: TramWarning, direction: TramDirection, crossY: number): void {
+    if (!this.scene.isActive() || this.endingRun) return;
+    const idx = this.tramWarnings.indexOf(warning);
+    if (idx >= 0) this.tramWarnings.splice(idx, 1);
+    warning.destroy();
+    this.trams.push(new Tram(this, direction, crossY));
+    this.audio?.playTramBell(1.0);
+    this.time.delayedCall(TRAM.duckDelayMs, () => {
+      if (!this.endingRun) this.audio?.duck(TRAM.duckFactor, TRAM.duckRestoreMs);
     });
+  }
+
+  private spawnTram(): void {
+    const direction: TramDirection = this.nextTramIndex % 2 === 0 ? 'left' : 'right';
+    const crossY = this.tramCrossY();
+    const warning = new TramWarning(this, crossY);
+    this.tramWarnings.push(warning);
+
+    const timer = this.time.delayedCall(
+      TRAM.warningMs,
+      () => this.arriveTram(warning, direction, crossY),
+      undefined,
+      this,
+    );
+    this.tramTimers.push(timer);
+  }
+
+  /** Stop tram telegraphs, pending spawns, and the bell when a run ends. */
+  private cleanupHazards(): void {
+    for (const timer of this.tramTimers) timer.remove();
+    this.tramTimers = [];
+    for (const warning of this.tramWarnings) warning.destroy();
+    this.tramWarnings = [];
+    for (const tram of this.trams) tram.destroy();
+    this.trams = [];
   }
 
   private refreshHud(): void {
@@ -365,26 +501,46 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private drawRoadBase(): void {
+    const { width, road } = getLayout();
     const g = this.roadBase;
     g.clear();
     g.fillStyle(COLOURS.road, 1);
-    g.fillRect(0, ROAD.topY, 480, ROAD.bottomY - ROAD.topY);
+    g.fillRect(0, road.topY, width, road.bottomY - road.topY);
     g.fillStyle(COLOURS.footpath, 1);
-    g.fillRect(0, ROAD.topY, ROAD.footpathWidth, ROAD.bottomY - ROAD.topY);
-    g.fillRect(480 - ROAD.footpathWidth, ROAD.topY, ROAD.footpathWidth, ROAD.bottomY - ROAD.topY);
+    g.fillRect(0, road.topY, road.footpathWidth, road.bottomY - road.topY);
+    g.fillRect(width - road.footpathWidth, road.topY, road.footpathWidth, road.bottomY - road.topY);
+  }
+
+  private drawLandmark(): void {
+    const lm = LANDMARKS[this.levelId];
+    this.landmarkGfx.clear();
+    this.landmarkLabel.setVisible(false);
+    if (!lm) return;
+
+    const elapsed = this.levelData.durationMs - this.timeLeft * 1000;
+    if (elapsed < lm.showAtMs || elapsed > lm.showAtMs + lm.hideAfterMs) return;
+
+    const { width, road } = getLayout();
+    const x = width * lm.xFrac;
+    const y = road.topY + 48 + (elapsed - lm.showAtMs) * 0.03;
+
+    this.landmarkGfx.fillStyle(lm.colour, 0.92);
+    this.landmarkGfx.fillRect(x - lm.w / 2, y, lm.w, lm.h);
+    this.landmarkLabel.setText(lm.label).setPosition(x, y + lm.h + 2).setVisible(true);
   }
 
   private drawRoadLines(): void {
-    const period = ROAD.dashLength + ROAD.dashGap;
-    const start = ROAD.topY - period + (this.roadScroll % period);
+    const { road } = getLayout();
+    const period = road.dashLength + road.dashGap;
+    const start = road.topY - period + (this.roadScroll % period);
     const g = this.roadLines;
     g.clear();
     g.fillStyle(COLOURS.footpath, 0.85);
-    for (const x of ROAD.lineColumns) {
-      for (let y = start; y < ROAD.bottomY; y += period) {
-        const top = Math.max(y, ROAD.topY);
-        const bottom = Math.min(y + ROAD.dashLength, ROAD.bottomY);
-        if (bottom > top) g.fillRect(x - ROAD.dashWidth / 2, top, ROAD.dashWidth, bottom - top);
+    for (const x of road.lineColumns) {
+      for (let y = start; y < road.bottomY; y += period) {
+        const top = Math.max(y, road.topY);
+        const bottom = Math.min(y + road.dashLength, road.bottomY);
+        if (bottom > top) g.fillRect(x - road.dashWidth / 2, top, road.dashWidth, bottom - top);
       }
     }
   }
@@ -411,7 +567,9 @@ export class DriveScene extends Phaser.Scene {
   private gameOver(cause: 'courier' | 'tram'): void {
     if (this.endingRun) return;
     this.endingRun = true;
+    this.cleanupHazards();
     this.audio?.stopMusic();
+    if (cause === 'tram') this.playSfx('tramImpact', 0.95);
     const message = cause === 'tram' ? MESSAGES.tramDeath : this.levelData.deathLine;
     this.scene.start(SCENES.GameOver, {
       message,
@@ -425,6 +583,7 @@ export class DriveScene extends Phaser.Scene {
   private completeLevel(): void {
     if (this.endingRun) return;
     this.endingRun = true;
+    this.cleanupHazards();
     this.audio?.stopMusic();
     this.score.addLevelClear(Math.max(0, this.timeLeft));
 
@@ -432,19 +591,19 @@ export class DriveScene extends Phaser.Scene {
     const next = LEVELS.find((l) => l.id === nextId);
     Persistence.unlockLevel(nextId); // unlocks the next suburb (or the boss after level 4)
 
-    const cx = 240;
+    const { centerX, centerY } = getLayout();
     this.add
-      .text(cx, 110, 'CHECKPOINT', { fontFamily: 'Bungee', fontSize: '24px', color: COLOUR_HEX.text })
+      .text(centerX, centerY - 25, 'CHECKPOINT', { fontFamily: 'Bungee', fontSize: '24px', color: COLOUR_HEX.text })
       .setOrigin(0.5);
     this.add
-      .text(cx, 140, `${this.levelData.name} cleared. ${next ? `On to ${next.name}.` : MESSAGES.checkpoint}`, {
+      .text(centerX, centerY + 5, `${this.levelData.name} cleared. ${next ? `On to ${next.name}.` : MESSAGES.checkpoint}`, {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.cyan,
       })
       .setOrigin(0.5);
     this.add
-      .text(cx, 160, `SCORE: ${this.score.value}`, {
+      .text(centerX, centerY + 25, `SCORE: ${this.score.value}`, {
         fontFamily: 'JetBrains Mono',
         fontSize: '10px',
         color: COLOUR_HEX.bile,

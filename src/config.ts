@@ -71,6 +71,8 @@ export const SCENES = {
   GameOver: 'GameOverScene',
   Victory: 'VictoryScene',
   Scoreboard: 'ScoreboardScene',
+  Settings: 'SettingsScene',
+  Credits: 'CreditsScene',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -82,12 +84,10 @@ export const SCENES = {
 export const SPRITE_PATHS = {
   // Player (VN Commodore) — using real dumped sedan from marcusvh 2D Top Down Pixel Cars pack
   playerClean: 'sprites/2D TOP DOWN PIXEL CARS/Sedan/sedan_red.png',
-  // TODO: create damaged/wrecked variants + turn animations from the source
+  playerWorn: 'sprites/2D TOP DOWN PIXEL CARS/Sedan/sedan_gray.png', // damage-state proxy until bespoke Commodore art
+  // TODO: wrecked variant + turn animations from the source
 
-  // Couriers — using cars from the same pack as temporary bases (will recolour + reshape)
-  courierScooter: 'sprites/2D TOP DOWN PIXEL CARS/Compact/compact_orange.png', // GoorPeach proxy
-  courierEbike: 'sprites/2D TOP DOWN PIXEL CARS/Coupe/coupe_green.png',       // ChewSnog proxy
-  courierPushbike: 'sprites/2D TOP DOWN PIXEL CARS/Sport/sport_blue.png',     // GorgeRush proxy (later recolour)
+  // Couriers are procedural (scooter / e-bike / pushbike) — see entities/Courier.ts
 
   // Road / background — the road itself is drawn procedurally (palette tokens,
   // chunky GTA-1 look) so no heavy background bitmap ships. Kept tileset ref for
@@ -110,17 +110,35 @@ export const AUDIO_PATHS = {
   drivingLoopB: 'audio/freesounds123-car-engine-335601.mp3',
   bossLoop: 'audio/freesound_community-video-game-music-loop-27629.mp3', // reuse for now
 
-  // SFX from the dump
-  ozempicFire: 'audio/freesounds123-car-engine-335601.mp3', // placeholder engine for now
-  courierCrash: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
-  engineRev: 'audio/freesounds123-car-engine-335601.mp3',
-  tiguanStart: 'audio/freesounds123-car-engine-335601.mp3',
-  tramBell: 'audio/freesound_community-tram-bell-29757.mp3',
+  // SFX — short trimmed clips only; never reuse loop/music files as one-shots (they stack/double).
+  ozempicFire: 'audio/courier-crash-trimmed.mp3', // short pew (was engine loop — stacked every 280ms fire)
+  courierCrash: 'audio/courier-crash-trimmed.mp3',
+  engineRev: 'audio/freesounds123-car-engine-335601.mp3', // reserved for future boost sfx
+  tiguanStart: 'audio/courier-crash-trimmed.mp3', // boss phase sting — short, not engine loop
+  tramBell: 'audio/tram-bell-trimmed.mp3',
   tramImpact: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
-  heartLost: 'audio/car_engine_demo.mp3', // tiny placeholder
-  powerupPickup: 'audio/freesound_community-tram-bell-29757.mp3', // chime-like
-  victorySting: 'audio/freesound_community-video-game-music-loop-27629.mp3',
-  gameoverSting: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
+  heartLost: 'audio/courier-crash-trimmed.mp3', // short thud (was engine loop doubling under music)
+  powerupPickup: 'audio/courier-crash-trimmed.mp3', // short blip — never reuse tram bell
+  victorySting: 'audio/courier-crash-trimmed.mp3',
+  gameoverSting: 'audio/courier-crash-trimmed.mp3',
+} as const;
+
+/** SFX timing — trim long samples so they do not stack or block the next cue. */
+export const AUDIO_SFX = {
+  /** Trimmed tram asset starts at the ding — no seek needed. */
+  tramBellSeekSec: 0,
+  tramBellMaxMs: 1400,
+  tramBellVolume: 1.0,
+  courierCrashMaxMs: 1200,
+  courierCrashSeekSec: 0,
+  /** One-shot caps — prevent long/loop sources stacking (ozempic fire cooldown is 280ms). */
+  ozempicFireMaxMs: 260,
+  heartLostMaxMs: 500,
+  powerupPickupMaxMs: 700,
+  gameoverStingMaxMs: 1500,
+  victoryStingMaxMs: 1200,
+  tiguanStartMaxMs: 800,
+  tramImpactMaxMs: 1400,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -184,36 +202,113 @@ export const MESSAGES = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
+/* Pause overlay (ui/PauseOverlay.ts) — P key in DriveScene + BossScene        */
+/* -------------------------------------------------------------------------- */
+
+export const PAUSE = {
+  overlayAlpha: 0.78,
+  titleYFrac: 0.26,
+  btnStartYFrac: 0.4,
+  btnGapFrac: 0.085,
+  btnW: 168,
+  depth: 10000,
+} as const;
+
+/** Default settings — persisted via systems/Persistence.ts (SettingsScene edits these). */
+export const SETTINGS = {
+  soundVolume: 0.85,
+  musicVolume: 0.65,
+  crtScanlines: true,
+  touchSteerSensitivity: 1.0,
+  touchInputMode: 'joystick' as const,
+} as const;
+
+export const SETTINGS_UI = {
+  volumeStep: 0.05,
+  volumeMin: 0,
+  volumeMax: 1,
+  sensitivityStep: 0.1,
+  sensitivityMin: 0.5,
+  sensitivityMax: 2.0,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* CRT scanline overlay (ui/CrtOverlay.ts) — toggle in Settings, default on    */
+/* -------------------------------------------------------------------------- */
+
+export const CRT = {
+  depth: 9000,
+  lineAlpha: 0.1,
+  lineSpacing: 3,
+  lineHeight: 1,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Screen shake (systems/ScreenShake.ts) — off when reduced motion is on     */
+/* -------------------------------------------------------------------------- */
+
+export const SCREEN_SHAKE = {
+  courierHitIntensity: 0.004,
+  courierHitDurationMs: 120,
+  tramDeathIntensity: 0.012,
+  tramDeathDurationMs: 380,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Particle bursts (systems/Particles.ts) — off when reduced motion is on    */
+/* -------------------------------------------------------------------------- */
+
+export const PARTICLES = {
+  depth: 15,
+  courierBurst: { count: 8, spread: 22, size: 3, durationMs: 280 },
+  tramSparks: { count: 12, spread: 34, size: 4, durationMs: 420 },
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Suburb landmarks — fixed-time easter eggs per driving level (BRIEF.md)      */
+/* -------------------------------------------------------------------------- */
+
+export const LANDMARKS: Record<
+  number,
+  { showAtMs: number; hideAfterMs: number; xFrac: number; label: string; colour: number; w: number; h: number }
+> = {
+  1: { showAtMs: 14000, hideAfterMs: 5500, xFrac: 0.78, label: 'SKIP GIRL', colour: COLOURS.magenta, w: 6, h: 16 },
+  2: { showAtMs: 16000, hideAfterMs: 5500, xFrac: 0.2, label: 'VIC MKT', colour: COLOURS.footpath, w: 22, h: 9 },
+  3: { showAtMs: 12000, hideAfterMs: 5500, xFrac: 0.52, label: 'MCG', colour: COLOURS.tramBody, w: 26, h: 11 },
+  4: { showAtMs: 18000, hideAfterMs: 6000, xFrac: 0.68, label: 'KEW MANSION', colour: COLOURS.footpath, w: 20, h: 14 },
+};
+
+/* -------------------------------------------------------------------------- */
 /* Gameplay constants — TODO: tune during implementation                       */
 /* -------------------------------------------------------------------------- */
 
 export const PLAYER = {
   startingLives: 3, // 3 hearts — see docs/BRIEF.md
-  startingAmmo: 5, // tutorial ammo
+  startingAmmo: 8, // tutorial ammo — topped up by frequent PEN pickups
   scale: 0.85,
   // Base dimensions (pixels at 480×270 internal res). Player-favouring hitboxes.
   width: 48,
   height: 96,
   // Steering / movement (tuned from config only)
   steerSpeed: 220, // px per second lateral
-  forwardSpeed: 140, // base auto-scroll feel (actual level uses scrollSpeed from levels.ts)
-  brakeMultiplier: 0.55,
+  forwardSpeed: 140, // fallback; each level passes scrollSpeed as the car's maxSpeed
+  cruiseY: 168, // normal lane position (lower on screen = further back in the pack)
+  brakeY: 202, // dropped back when braking hard
+  brakeMinRatio: 0.18, // floor speed as a fraction of max (slows road scroll)
+  brakeDecay: 0.32, // how quickly speed bleeds off under brake
+  accelRate: 0.09, // recovery toward cruise when brake released
+  yLerp: 0.22, // visual drop-back lerp toward cruiseY / brakeY
   boostMultiplier: 1.5,
   // Collision tuning (forgiving on player side per CLAUDE.md rule 9)
   hitboxPadding: 8,
-} as const;
-
-/* -------------------------------------------------------------------------- */
-/* Ozempic pen projectile                                                      */
-/* -------------------------------------------------------------------------- */
-
-export const PEN = {
-  speed: 480, // px/s up the screen
-  scaleX: 0.22,
-  scaleY: 0.55,
-  tint: 0xaaddff,
-  muzzleOffsetY: 30, // spawn this far ahead of the car
-  despawnY: 20, // cull above this line
+  /** Texture keys (preloaded in PreloadScene) for progressive damage. */
+  textures: { clean: 'playerClean', worn: 'playerWorn' },
+  wornBelowLives: 3, // swap to worn texture below this count
+  criticalLives: 1, // last heart — persistent hazard tint
+  hitFlashTint: COLOURS.hazard,
+  hitFlashMs: 250,
+  shieldTint: COLOURS.bile,
+  shieldFlashMs: 300,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -221,8 +316,20 @@ export const PEN = {
 /* -------------------------------------------------------------------------- */
 
 export const COURIER = {
-  scale: 0.72,
-  hitGenerosity: 4, // px expansion of courier hitbox when player shoots (rule 9)
+  hitGenerosity: 5, // px expansion when player shoots (rule 9)
+  spawnInsetY: 14, // px below road.topY
+  spriteDepth: 8,
+  /** Compact rider hitboxes — scooters and bikes, not cars (docs/BRIEF.md). */
+  body: {
+    GoorPeach: { w: 16, h: 22 },
+    ChewSnog: { w: 18, h: 24 },
+    GorgeRush: { w: 14, h: 26 },
+  } as const,
+  brandColour: {
+    GoorPeach: COLOURS.hazard,
+    ChewSnog: COLOURS.bile,
+    GorgeRush: COLOURS.magenta,
+  } as const,
   GoorPeach: {
     hp: 1,
     speed: 160,
@@ -250,33 +357,152 @@ export const COURIER = {
 /* Road background (drawn procedurally) + lanes                               */
 /* -------------------------------------------------------------------------- */
 
+/** @deprecated Use getLayout().road — kept for types only. */
 export const ROAD = {
-  topY: 40, // play area top (below HUD band)
-  bottomY: 230, // play area bottom
-  footpathWidth: 56, // cream verge each side
-  laneXs: [170, 240, 310], // courier / power-up lane centres
-  // Scrolling dashed centre lines
-  lineColumns: [205, 275], // x positions of dashed lane dividers
+  topY: 40,
+  bottomY: 230,
+  footpathWidth: 56,
+  laneXs: [170, 240, 310],
+  lineColumns: [205, 275],
   dashLength: 22,
   dashGap: 20,
   dashWidth: 4,
 } as const;
 
 /* -------------------------------------------------------------------------- */
+/* Layout — landscape (480×270) and portrait (270×480) mobile bands           */
+/* -------------------------------------------------------------------------- */
+
+export interface RoadLayout {
+  topY: number;
+  bottomY: number;
+  footpathWidth: number;
+  laneXs: readonly number[];
+  lineColumns: readonly number[];
+  dashLength: number;
+  dashGap: number;
+  dashWidth: number;
+}
+
+export interface PlayerLayout {
+  cruiseY: number;
+  brakeY: number;
+}
+
+export interface TouchLayout {
+  steerDeadzone: number;
+  showHints: boolean;
+  hintAlpha: number;
+  steerZone: { x: number; y: number; w: number; h: number };
+  brakeZone: { x: number; y: number; w: number; h: number };
+  fireZone: { x: number; y: number; w: number; h: number };
+  moveRange: number;
+}
+
+export interface TramLayout {
+  length: number;
+}
+
+export interface GameLayout {
+  width: number;
+  height: number;
+  portrait: boolean;
+  centerX: number;
+  centerY: number;
+  road: RoadLayout;
+  player: PlayerLayout;
+  touch: TouchLayout;
+  tram: TramLayout;
+  hud: {
+    titleY: number;
+    timerY: number;
+    footerY: number;
+    hintY: number;
+    livesX: number;
+    ammoX: number;
+    scoreX: number;
+  };
+}
+
+export const LAYOUT_LANDSCAPE: GameLayout = {
+  width: 480,
+  height: 270,
+  portrait: false,
+  centerX: 240,
+  centerY: 135,
+  road: {
+    topY: 40,
+    bottomY: 230,
+    footpathWidth: 56,
+    laneXs: [170, 240, 310],
+    lineColumns: [205, 275],
+    dashLength: 22,
+    dashGap: 20,
+    dashWidth: 4,
+  },
+  player: { cruiseY: 168, brakeY: 202 },
+  touch: {
+    steerDeadzone: 8,
+    showHints: true,
+    hintAlpha: 0.12,
+    steerZone: { x: 0, y: 140, w: 240, h: 130 },
+    brakeZone: { x: 330, y: 170, w: 150, h: 100 },
+    fireZone: { x: 330, y: 0, w: 150, h: 110 },
+    moveRange: 40,
+  },
+  tram: { length: 148 },
+  hud: { titleY: 26, timerY: 46, footerY: 265, hintY: 250, livesX: 60, ammoX: 180, scoreX: 320 },
+};
+
+export const LAYOUT_PORTRAIT: GameLayout = {
+  width: 270,
+  height: 480,
+  portrait: true,
+  centerX: 135,
+  centerY: 240,
+  road: {
+    topY: 78,
+    bottomY: 400,
+    footpathWidth: 28,
+    laneXs: [88, 135, 182],
+    lineColumns: [108, 162],
+    dashLength: 20,
+    dashGap: 18,
+    dashWidth: 3,
+  },
+  player: { cruiseY: 340, brakeY: 410 },
+  touch: {
+    steerDeadzone: 8,
+    showHints: true,
+    hintAlpha: 0.12,
+    steerZone: { x: 0, y: 300, w: 135, h: 180 },
+    brakeZone: { x: 175, y: 340, w: 95, h: 140 },
+    fireZone: { x: 175, y: 78, w: 95, h: 110 },
+    moveRange: 36,
+  },
+  tram: { length: 120 },
+  hud: { titleY: 36, timerY: 58, footerY: 462, hintY: 446, livesX: 42, ammoX: 135, scoreX: 228 },
+};
+
+/* -------------------------------------------------------------------------- */
+/* Ozempic pen projectile                                                      */
+/* -------------------------------------------------------------------------- */
+
+export const PEN = {
+  speed: 480, // px/s up the screen
+  width: 5,
+  height: 14,
+  colour: COLOURS.cyan,
+  muzzleOffsetY: 30, // spawn this far ahead of the car
+  despawnY: ROAD.topY - 4, // cull above the play band
+} as const;
+
+/* -------------------------------------------------------------------------- */
 /* Touch controls (mobile-first — ui/TouchControls.ts)                         */
 /* -------------------------------------------------------------------------- */
 
-export const TOUCH = {
-  steerDeadzone: 8, // px from anchor before a drag counts as left/right
-  showHints: true, // faint zone overlays on touch devices
-  hintAlpha: 0.12,
-  // Input zones in internal 480×270 coords (per docs/BRIEF.md):
-  //   drag lower-left to steer, hold lower-right to brake, tap upper-right to fire.
-  steerZone: { x: 0, y: 140, w: 240, h: 130 },
-  brakeZone: { x: 330, y: 170, w: 150, h: 100 },
-  fireZone: { x: 330, y: 0, w: 150, h: 110 },
-  moveRange: 40, // px of drag for full deflection (boss arena 2D movement)
-} as const;
+/** @deprecated Use getLayout().touch */
+export const TOUCH = LAYOUT_LANDSCAPE.touch;
 
 /* -------------------------------------------------------------------------- */
 /* Tram constants — fixed spawns, 1.5s telegraph, instant death              */
@@ -284,18 +510,28 @@ export const TOUCH = {
 
 export const TRAM = {
   warningMs: 1500, // telegraph lead time before the tram arrives
-  speed: 320,
-  width: 120,
-  height: 40,
-  spawnX: 240, // tram enters down the centre cross-street
-  spawnY: 20,
-  // Flashing crossing-light telegraph
-  lightXs: [180, 288],
-  lightY: 20,
-  lightW: 12,
-  lightH: 8,
+  crossDurationMs: 500, // cross the playable road in ~0.5s (docs/BRIEF.md)
+  length: 148, // long axis — W-class body along the street
+  height: 34, // short axis across the lane
+  /**
+   * Cross-street sits this many px above cruiseY (smaller Y). Braking drops the car
+   * back below the crossing; cruising keeps you in the kill band.
+   */
+  crossAheadOffset: 32,
+  /** Player-favouring hitbox — generous on X, tight on Y so braking clears the tram. */
+  hitPaddingX: 6,
+  hitPaddingY: 2,
+  // Flashing crossing-light telegraph at the footpath edges of the cross-street
+  lightInset: 10, // px in from each footpath edge
+  lightW: 14,
+  lightH: 10,
   flashMs: 180,
+  duckFactor: 0.3,
+  duckRestoreMs: 650,
+  /** Ms after the ding before ducking music — keeps the bell upfront. */
+  duckDelayMs: 80,
   // Note: fixed spawn times are per-level in data/levels.ts (tramSpawnTimes).
+  // Direction alternates left→right / right→left per spawn index in DriveScene.
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -303,8 +539,9 @@ export const TRAM = {
 /* -------------------------------------------------------------------------- */
 
 export const POWERUP = {
-  visualRadius: 10, // chunky pickup icon radius
-  ammo: { shots: 3 },
+  visualRadius: 12, // chunky pickup icon radius
+  spawnAboveRoad: 28, // scrolls down with the road into the player band
+  ammo: { shots: 4 },
   boost: { multiplier: 1.5, durationMs: 6000 },
   shield: { absorbs: 1 },
   magpie: { radius: 70 },
@@ -324,17 +561,17 @@ export const BOSS = {
     start: 30, // initial feed meter %
     winAt: 0, // drain to here to beat the boss
     phase2At: 100, // reaching here triggers the Tiguan escape
-    passiveRisePerSec: 3, // creeps up so the player must keep firing
-    penDrain: 9, // % dropped per pen that hits the nerd
-    deliveryRise: 14, // % gained when a courier reaches the nerd
-    secondWind: 50, // meter reset after surviving an escape (harder)
+    passiveRisePerSec: 2.5, // creeps up — tuned player-favouring after playtest
+    penDrain: 10, // % dropped per pen that hits the nerd
+    deliveryRise: 12, // % gained when a courier reaches the nerd
+    secondWind: 45, // meter reset after surviving an escape (still tense)
   },
-  ammo: { start: 8, max: 12, regenMs: 550 }, // ammo regenerates in the arena
-  feeder: { intervalMs: 1900, speed: 70, scale: 0.5, deliverDist: 30 },
+  ammo: { start: 9, max: 12, regenMs: 500 }, // ammo regenerates in the arena
+  feeder: { intervalMs: 2100, speed: 68, scale: 0.5, deliverDist: 30 },
   fireCooldown: 260,
   escape: {
-    timeMs: 15000, // 15s to disable the Tiguan
-    tiguanHp: 10, // pen hits to disable
+    timeMs: 18000, // 18s to disable the Tiguan
+    tiguanHp: 8, // pen hits to disable
     tiguanSpeed: 70, // px/s toward the exit
     tiguanScale: 0.8,
     exitY: -50, // off the top = escaped

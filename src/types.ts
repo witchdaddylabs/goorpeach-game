@@ -79,11 +79,15 @@ export interface SubmitResult {
   top: ScoreEntry[]; // current Top-N after insert
 }
 
-/** Persisted player settings (via systems/Persistence.ts). TODO: expand. */
+/** Touch steer style — joystick holds offset; swipe uses per-frame flick. */
+export type TouchInputMode = 'joystick' | 'swipe';
+
+/** Persisted player settings (via systems/Persistence.ts). */
 export interface GameSettings {
   soundVolume: number;
   musicVolume: number;
   crtScanlines: boolean;
   reducedMotion: boolean;
   touchSteerSensitivity: number;
+  touchInputMode: TouchInputMode;
 }

@@ -1,9 +1,18 @@
 import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX, BOSS, MESSAGES } from '../config';
 import { OzempicPen } from '../entities/OzempicPen';
+import { Courier } from '../entities/Courier';
+import { ScooterCourier } from '../entities/ScooterCourier';
+import { EbikeCourier } from '../entities/EbikeCourier';
+import { PushbikeCourier } from '../entities/PushbikeCourier';
+import { CrtOverlay } from '../ui/CrtOverlay';
+import { PauseOverlay } from '../ui/PauseOverlay';
 import { TouchControls } from '../ui/TouchControls';
 import { Score } from '../systems/Score';
 import { Audio } from '../systems/Audio';
+import { Particles } from '../systems/Particles';
+import { Persistence } from '../systems/Persistence';
+import { ScreenShake } from '../systems/ScreenShake';
 import type { CourierBrand } from '../types';
 
 type BossPhase = 'feeding' | 'escape';
@@ -35,9 +44,11 @@ export class BossScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
   private nerd!: Phaser.GameObjects.Rectangle;
   private touch!: TouchControls;
+  private pauseOverlay!: PauseOverlay;
+  private paused = false;
 
   private pens: OzempicPen[] = [];
-  private feeders: Phaser.GameObjects.Sprite[] = [];
+  private feeders: Courier[] = [];
   private feederSpawnIndex = 0;
   private lastFireTime = 0;
 
@@ -57,6 +68,7 @@ export class BossScene extends Phaser.Scene {
   private keyS?: Phaser.Input.Keyboard.Key;
   private keyD?: Phaser.Input.Keyboard.Key;
   private fireKey?: Phaser.Input.Keyboard.Key;
+  private pauseKey?: Phaser.Input.Keyboard.Key;
 
   private readonly feederBrands: CourierBrand[] = ['GoorPeach', 'ChewSnog', 'GorgeRush'];
 
@@ -74,6 +86,8 @@ export class BossScene extends Phaser.Scene {
     this.feed = BOSS.feed.start;
     this.ammo = BOSS.ammo.start;
     this.over = false;
+    this.paused = false;
+    this.time.timeScale = 1;
     this.pens = [];
     this.feeders = [];
     this.feederSpawnIndex = 0;
@@ -97,7 +111,20 @@ export class BossScene extends Phaser.Scene {
     this.player = this.add.sprite(240, 200, 'playerClean').setScale(BOSS.playerScale);
 
     this.touch = new TouchControls(this);
+    this.pauseOverlay = new PauseOverlay(this, {
+      onResume: () => this.togglePause(false),
+      onRestart: () => this.restartBoss(),
+      onQuit: () => this.quitToMenu(),
+      getMuted: () => this.audio?.isMuted ?? false,
+      onMuteToggle: () => {
+        const muted = this.audio?.toggleMute() ?? false;
+        if (muted) this.audio?.stopMusic();
+        else this.playMusic();
+      },
+    });
     this.setupInput();
+    new CrtOverlay(this);
+    this.addPauseButton();
 
     // HUD
     this.feedBar = this.add.graphics();
@@ -116,6 +143,11 @@ export class BossScene extends Phaser.Scene {
     });
 
     this.audio = this.registry.get('audio') as Audio | undefined;
+    if (this.audio) {
+      const settings = Persistence.getSettings();
+      this.audio.setMusicVolume(settings.musicVolume);
+      this.audio.setSfxVolume(settings.soundVolume);
+    }
     this.playMusic();
     this.drawHud();
   }
@@ -129,12 +161,50 @@ export class BossScene extends Phaser.Scene {
     this.keyS = kb.addKey('S');
     this.keyD = kb.addKey('D');
     this.fireKey = kb.addKey('SPACE');
-    kb.on('keydown-P', () => {
-      if (this.over) return;
-      this.over = true;
-      this.audio?.stopMusic();
-      this.scene.start(SCENES.Menu);
-    });
+    this.pauseKey = kb.addKey('P');
+  }
+
+  private addPauseButton(): void {
+    const btn = this.add
+      .text(16, 14, 'II', {
+        fontFamily: 'Bungee',
+        fontSize: '12px',
+        color: COLOUR_HEX.text,
+        backgroundColor: COLOUR_HEX.textDark,
+      })
+      .setOrigin(0, 0)
+      .setPadding(4, 6, 4, 6)
+      .setDepth(5000)
+      .setInteractive({ useHandCursor: true });
+    btn.on('pointerup', () => this.togglePause());
+  }
+
+  private togglePause(force?: boolean): void {
+    if (this.over) return;
+    const next = force ?? !this.paused;
+    this.paused = next;
+    if (next) {
+      this.pauseOverlay.show();
+      this.time.timeScale = 0;
+    } else {
+      this.pauseOverlay.hide();
+      this.time.timeScale = 1;
+    }
+  }
+
+  private restartBoss(): void {
+    if (this.over) return;
+    this.pauseOverlay.hide();
+    this.paused = false;
+    this.time.timeScale = 1;
+    this.scene.restart({ score: this.entryScore });
+  }
+
+  private quitToMenu(): void {
+    if (this.over) return;
+    this.over = true;
+    this.audio?.stopMusic();
+    this.scene.start(SCENES.Menu);
   }
 
   private buildMove(): { x: number; y: number } {
@@ -151,6 +221,13 @@ export class BossScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.over) return;
+
+    if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
+      this.togglePause();
+      return;
+    }
+
+    if (this.paused) return;
     const dt = delta / 1000;
 
     // Move player within arena
@@ -176,7 +253,7 @@ export class BossScene extends Phaser.Scene {
       this.lastFireTime = time;
     }
 
-    this.updatePens();
+    this.updatePens(delta);
     this.updateFeeders(dt);
 
     if (this.phase === 'feeding') this.updateFeeding(dt);
@@ -185,11 +262,17 @@ export class BossScene extends Phaser.Scene {
     this.drawHud();
   }
 
-  private updatePens(): void {
+  private updatePens(delta: number): void {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (!pen || !pen.active || pen.offscreen) {
+      if (!pen || !pen.active) {
         pen?.destroy();
+        this.pens.splice(i, 1);
+        continue;
+      }
+      pen.update(delta);
+      if (pen.offscreen) {
+        pen.destroy();
         this.pens.splice(i, 1);
       }
     }
@@ -206,34 +289,52 @@ export class BossScene extends Phaser.Scene {
     ];
     const p = points[this.feederSpawnIndex % points.length] ?? { x: BOSS.arena.x, y: 205 };
     const brand = this.feederBrands[this.feederSpawnIndex % this.feederBrands.length] ?? 'GoorPeach';
-    const texture = brand === 'GoorPeach' ? 'courierScooter' : brand === 'ChewSnog' ? 'courierEbike' : 'courierPushbike';
     this.feederSpawnIndex += 1;
-    this.feeders.push(this.add.sprite(p.x, p.y, texture).setScale(BOSS.feeder.scale));
+    const courier = this.spawnArenaCourier(brand, p.x, p.y);
+    courier.sprite.setVelocity(0, 0);
+    this.feeders.push(courier);
+  }
+
+  private spawnArenaCourier(brand: CourierBrand, x: number, y: number): Courier {
+    switch (brand) {
+      case 'GoorPeach':
+        return new ScooterCourier(this, x, y);
+      case 'ChewSnog':
+        return new EbikeCourier(this, x, y);
+      case 'GorgeRush':
+        return new PushbikeCourier(this, x, y);
+    }
   }
 
   private updateFeeders(dt: number): void {
+    const deltaMs = dt * 1000;
     for (let i = this.feeders.length - 1; i >= 0; i--) {
-      const f = this.feeders[i];
-      if (!f || !f.active) {
+      const c = this.feeders[i];
+      if (!c || !c.active) {
+        c?.destroy();
         this.feeders.splice(i, 1);
         continue;
       }
 
       // Player ram — stop the delivery (no ammo cost)
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), f.getBounds())) {
-        f.destroy();
+      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), c.getBounds())) {
+        Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
+        ScreenShake.courierHit(this);
+        this.score.addCourier(c.brand);
+        c.destroy();
         this.feeders.splice(i, 1);
-        this.score.addCourier('GorgeRush');
-        this.playSfx('courierCrash', 0.7);
+        this.audio?.playCourierCrash(0.7);
         continue;
       }
 
       // Move toward the nerd
-      const dx = this.nerd.x - f.x;
-      const dy = this.nerd.y - f.y;
+      const sprite = c.sprite;
+      const dx = this.nerd.x - sprite.x;
+      const dy = this.nerd.y - sprite.y;
       const dist = Math.hypot(dx, dy) || 1;
-      f.x += (dx / dist) * BOSS.feeder.speed * dt;
-      f.y += (dy / dist) * BOSS.feeder.speed * dt;
+      sprite.x += (dx / dist) * BOSS.feeder.speed * dt;
+      sprite.y += (dy / dist) * BOSS.feeder.speed * dt;
+      c.update(deltaMs);
 
       // Delivery — only feeds the nerd during the feeding phase
       if (dist < BOSS.feeder.deliverDist) {
@@ -241,7 +342,7 @@ export class BossScene extends Phaser.Scene {
           this.feed = Math.min(BOSS.feed.phase2At, this.feed + BOSS.feed.deliveryRise);
           this.flashNerd(COLOURS.bile);
         }
-        f.destroy();
+        c.destroy();
         this.feeders.splice(i, 1);
       }
     }
@@ -314,7 +415,7 @@ export class BossScene extends Phaser.Scene {
     this.nerd.setPosition(BOSS.nerd.x, BOSS.nerd.y);
     this.feed = BOSS.feed.secondWind; // second-wind difficulty
     this.phase = 'feeding';
-    this.playSfx('courierCrash', 0.8);
+    this.audio?.playCourierCrash(0.8);
   }
 
   private flashNerd(colour: number): void {

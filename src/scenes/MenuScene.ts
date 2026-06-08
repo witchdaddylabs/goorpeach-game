@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX } from '../config';
 import { Audio } from '../systems/Audio';
+import { Persistence } from '../systems/Persistence';
+import { CrtOverlay } from '../ui/CrtOverlay';
+import { getLayout } from '../systems/Layout';
 
 /**
  * MenuScene — title screen with chunky logo, Melbourne skyline hint, and the
@@ -26,18 +29,17 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    const cx = 240;
-    const cy = 135;
+    const { width, height, centerX, centerY } = getLayout();
 
     // Background
-    this.add.rectangle(cx, cy, 480, 270, COLOURS.road).setOrigin(0.5);
+    this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
 
     // Very minimal late-90s Melbourne skyline silhouette (hard rects, no gradients)
     this.drawSkyline();
 
     // Big chunky title — Bungee + palette
     this.add
-      .text(cx, 48, 'GOORPEACH', {
+      .text(centerX, height * 0.18, 'GOORPEACH', {
         fontFamily: 'Bungee',
         fontSize: '36px',
         color: COLOUR_HEX.text,
@@ -46,7 +48,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 78, 'APOCALYPSE', {
+      .text(centerX, height * 0.29, 'APOCALYPSE', {
         fontFamily: 'Bungee',
         fontSize: '16px',
         color: COLOUR_HEX.hazard,
@@ -56,7 +58,7 @@ export class MenuScene extends Phaser.Scene {
 
     // Tagline (dry, Australian, per BRIEF.md)
     this.add
-      .text(cx, 100, 'Richmond to Kew. Delivery riders. Ozempic. Trams.', {
+      .text(centerX, height * 0.37, 'Richmond to Kew. Delivery riders. Ozempic. Trams.', {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.cyan,
@@ -65,26 +67,31 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Buttons — large tap targets, chunky 90s style
-    const startY = 140;
+    const startY = height * 0.52;
+    const btnGap = height * 0.1;
     this.createButton('START', startY, async () => {
       await this.handleStart();
     });
 
-    this.createButton('LEVEL SELECT', startY + 28, () => {
+    this.createButton('LEVEL SELECT', startY + btnGap, () => {
       this.scene.start(SCENES.LevelSelect);
     });
 
-    this.createButton('SETTINGS', startY + 56, () => {
-      this.showComingSoon('Settings');
+    this.createButton('HIGH SCORES', startY + btnGap * 2, () => {
+      this.scene.start(SCENES.Scoreboard);
     });
 
-    this.createButton('CREDITS', startY + 84, () => {
-      this.showComingSoon('Credits');
+    this.createButton('SETTINGS', startY + btnGap * 3, () => {
+      this.scene.start(SCENES.Settings);
+    });
+
+    this.createButton('CREDITS', startY + btnGap * 4, () => {
+      this.scene.start(SCENES.Credits);
     });
 
     // Small mute toggle (top-right, touch friendly)
     const muteBtn = this.add
-      .text(460, 18, '♫', {
+      .text(width - 20, height * 0.07, '♫', {
         fontFamily: 'JetBrains Mono',
         fontSize: '14px',
         color: COLOUR_HEX.text,
@@ -103,7 +110,7 @@ export class MenuScene extends Phaser.Scene {
 
     // Status line (for unlock feedback and coming-soon messages)
     this.statusText = this.add
-      .text(cx, 250, '', {
+      .text(centerX, height * 0.93, '', {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.bile,
@@ -120,13 +127,17 @@ export class MenuScene extends Phaser.Scene {
       this.audio = existing;
       this.statusText.setText('audio ready — tap START to drive');
     }
+
+    new CrtOverlay(this);
   }
 
   private drawSkyline(): void {
+    const { width, height } = getLayout();
+    const scale = width / 480;
     // Hard-edged building silhouettes using palette colours (footpath, hazard, tram body, magenta)
     // Bottom strip representing inner-Melbourne roofline
     const g = this.add.graphics();
-    const baseY = 210;
+    const baseY = height * 0.78;
 
     // Simple repeating blocks of different heights — very GTA1 / Micro Machines feel
     const blocks = [
@@ -144,24 +155,28 @@ export class MenuScene extends Phaser.Scene {
     ];
 
     blocks.forEach((b) => {
+      const x = b.x * scale;
+      const w = b.w * scale;
+      const h = b.h * scale;
       g.fillStyle(b.c, 0.85);
-      g.fillRect(b.x, baseY - b.h, b.w, b.h);
+      g.fillRect(x, baseY - h, w, h);
       // Tiny roof detail line
       g.fillStyle(COLOURS.road, 0.6);
-      g.fillRect(b.x, baseY - b.h - 2, b.w, 3);
+      g.fillRect(x, baseY - h - 2, w, 3);
     });
   }
 
   private createButton(label: string, y: number, onActivate: () => void): Phaser.GameObjects.Text {
-    const cx = 240;
+    const { width, centerX } = getLayout();
+    const btnW = Math.min(184, width - 24);
 
     // Background "plaque" (hard, no shadow — 90s style)
     const bg = this.add.graphics();
     bg.fillStyle(COLOURS.textDark, 0.9);
-    bg.fillRect(cx - 92, y - 9, 184, 20);
+    bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
 
     const txt = this.add
-      .text(cx, y, label, {
+      .text(centerX, y, label, {
         fontFamily: 'Bungee',
         fontSize: '13px',
         color: COLOUR_HEX.text,
@@ -175,14 +190,14 @@ export class MenuScene extends Phaser.Scene {
       txt.setColor(COLOUR_HEX.cyan);
       bg.clear();
       bg.fillStyle(COLOURS.cyan, 0.15);
-      bg.fillRect(cx - 92, y - 9, 184, 20);
+      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
     });
 
     txt.on('pointerout', () => {
       txt.setColor(COLOUR_HEX.text);
       bg.clear();
       bg.fillStyle(COLOURS.textDark, 0.9);
-      bg.fillRect(cx - 92, y - 9, 184, 20);
+      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
     });
 
     txt.on('pointerdown', () => {
@@ -204,6 +219,9 @@ export class MenuScene extends Phaser.Scene {
     }
 
     await this.audio.unlock();
+    const settings = Persistence.getSettings();
+    this.audio.setMusicVolume(settings.musicVolume);
+    this.audio.setSfxVolume(settings.soundVolume);
     this.audio.playMusic('menuLoop');
 
     // Make the audio manager available to subsequent scenes (Drive, Boss, etc.)
@@ -220,19 +238,4 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
-  private showComingSoon(feature: string): void {
-    if (this.audio) {
-      this.audio.playSfx('powerupPickup', 0.6);
-    }
-    this.statusText.setText(`${feature} — next session (one scene at a time)`);
-    this.statusText.setColor(COLOUR_HEX.caution);
-
-    // Clear the message after a moment so it doesn't stick
-    this.time.delayedCall(1600, () => {
-      if (this.statusText && this.statusText.active) {
-        this.statusText.setText(this.audio ? 'audio ready' : 'tap START to begin');
-        this.statusText.setColor(COLOUR_HEX.bile);
-      }
-    });
-  }
 }

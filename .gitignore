@@ -22,3 +22,6 @@ Thumbs.db
 
 # Cloudflare / Wrangler local state (local D1 lives here)
 .wrangler/
+
+# Local playtest screenshots (scripts/playtest.mjs)
+playtest-output/

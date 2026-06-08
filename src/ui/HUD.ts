@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLOUR_HEX } from '../config';
+import { getLayout } from '../systems/Layout';
 
 /** Live values the HUD renders each frame. */
 export interface HudState {
@@ -21,10 +22,10 @@ export class HUD {
   private readonly scoreText: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, levelName: string) {
-    const cx = 240;
+    const { centerX, hud } = getLayout();
 
     scene.add
-      .text(cx, 26, levelName.toUpperCase(), {
+      .text(centerX, hud.titleY, levelName.toUpperCase(), {
         fontFamily: 'Bungee',
         fontSize: '18px',
         color: COLOUR_HEX.text,
@@ -32,23 +33,23 @@ export class HUD {
       .setOrigin(0.5);
 
     this.timerText = scene.add
-      .text(cx, 46, '', { fontFamily: 'JetBrains Mono', fontSize: '11px', color: COLOUR_HEX.caution })
+      .text(centerX, hud.timerY, '', { fontFamily: 'JetBrains Mono', fontSize: '11px', color: COLOUR_HEX.caution })
       .setOrigin(0.5);
 
     this.livesText = scene.add
-      .text(60, 265, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.text })
+      .text(hud.livesX, hud.footerY, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.text })
       .setOrigin(0.5);
 
     this.ammoText = scene.add
-      .text(180, 265, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.cyan })
+      .text(hud.ammoX, hud.footerY, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5);
 
     this.scoreText = scene.add
-      .text(320, 265, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.bile })
+      .text(hud.scoreX, hud.footerY, '', { fontFamily: 'JetBrains Mono', fontSize: '8px', color: COLOUR_HEX.bile })
       .setOrigin(0.5);
 
     scene.add
-      .text(cx, 250, 'A/D ←→ steer • S↓ brake • SPACE fire • P menu', {
+      .text(centerX, hud.hintY, 'A/D ←→ steer • S↓ brake • SPACE fire • P menu', {
         fontFamily: 'JetBrains Mono',
         fontSize: '6px',
         color: COLOUR_HEX.text,

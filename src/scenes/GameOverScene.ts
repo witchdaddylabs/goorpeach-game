@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX } from '../config';
 import { Audio } from '../systems/Audio';
+import { getLayout } from '../systems/Layout';
 
 /** Data passed in from DriveScene when a run ends in death. */
 export interface GameOverData {
@@ -28,40 +29,40 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    const cx = 240;
+    const { width, height, centerX, centerY } = getLayout();
 
-    this.add.rectangle(cx, 135, 480, 270, COLOURS.textDark).setOrigin(0.5);
+    this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
 
     this.add
-      .text(cx, 70, 'GAME OVER', { fontFamily: 'Bungee', fontSize: '34px', color: COLOUR_HEX.hazard })
+      .text(centerX, height * 0.26, 'GAME OVER', { fontFamily: 'Bungee', fontSize: '34px', color: COLOUR_HEX.hazard })
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 110, this.params.message, {
+      .text(centerX, height * 0.41, this.params.message, {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.text,
         align: 'center',
-        wordWrap: { width: 400 },
+        wordWrap: { width: width - 40 },
       })
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 142, `SCORE: ${this.params.score}`, {
+      .text(centerX, height * 0.53, `SCORE: ${this.params.score}`, {
         fontFamily: 'JetBrains Mono',
         fontSize: '11px',
         color: COLOUR_HEX.bile,
       })
       .setOrigin(0.5);
 
-    this.createButton('RESTART LEVEL', 166, () => {
+    this.createButton('RESTART LEVEL', height * 0.62, () => {
       const target = this.params.restartScene ?? SCENES.Drive;
       this.scene.start(target, { levelId: this.params.levelId, score: this.params.restartScore });
     });
-    this.createButton('SUBMIT SCORE', 194, () => {
+    this.createButton('SUBMIT SCORE', height * 0.72, () => {
       this.scene.start(SCENES.Scoreboard, { score: this.params.score, levelReached: this.params.levelId });
     });
-    this.createButton('QUIT TO MENU', 222, () => {
+    this.createButton('QUIT TO MENU', height * 0.82, () => {
       this.scene.start(SCENES.Menu);
     });
 
@@ -77,13 +78,14 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private createButton(label: string, y: number, onActivate: () => void): void {
-    const cx = 240;
+    const { width, centerX } = getLayout();
+    const btnW = Math.min(184, width - 24);
     const bg = this.add.graphics();
     bg.fillStyle(COLOURS.road, 0.9);
-    bg.fillRect(cx - 92, y - 9, 184, 20);
+    bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
 
     const txt = this.add
-      .text(cx, y, label, { fontFamily: 'Bungee', fontSize: '12px', color: COLOUR_HEX.text })
+      .text(centerX, y, label, { fontFamily: 'Bungee', fontSize: '12px', color: COLOUR_HEX.text })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 

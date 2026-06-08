@@ -1,0 +1,62 @@
+import Phaser from 'phaser';
+import { SCENES, COLOURS, COLOUR_HEX, FONTS } from '../config';
+import { getLayout } from '../systems/Layout';
+
+/** Condensed attribution from CREDITS.md — audit-clean, fits the screen. */
+const CREDIT_LINES = [
+  'GOORPEACH APOCALYPSE',
+  '',
+  'Sprites',
+  'Kenney RPG Urban Pack (CC0)',
+  'marcusvh 2D Top Down Pixel Cars',
+  'OpenGameArt top-down vehicles',
+  '',
+  'Audio',
+  'freesound.org community samples',
+  'Pixabay royalty-free loops',
+  '',
+  'Fonts',
+  'Bungee — Google Fonts (OFL)',
+  'JetBrains Mono — Google Fonts (OFL)',
+  '',
+  'A Melbourne parody. No real brands.',
+  'Trams are still trying to kill you.',
+];
+
+/**
+ * CreditsScene — asset attribution log (docs/BRIEF.md title screen Credits).
+ */
+export class CreditsScene extends Phaser.Scene {
+  constructor() {
+    super(SCENES.Credits);
+  }
+
+  create(): void {
+    const { width, height, centerX, centerY } = getLayout();
+
+    this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
+    this.add
+      .text(centerX, height * 0.08, 'CREDITS', { fontFamily: FONTS.title, fontSize: '22px', color: COLOUR_HEX.cyan })
+      .setOrigin(0.5);
+
+    const body = CREDIT_LINES.join('\n');
+    this.add
+      .text(centerX, height * 0.2, body, {
+        fontFamily: FONTS.mono,
+        fontSize: width < 320 ? '7px' : '8px',
+        color: COLOUR_HEX.text,
+        align: 'center',
+        lineSpacing: 4,
+        wordWrap: { width: width - 32 },
+      })
+      .setOrigin(0.5, 0);
+
+    const back = this.add
+      .text(centerX, height * 0.9, 'BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    back.on('pointerover', () => back.setColor(COLOUR_HEX.hazard));
+    back.on('pointerout', () => back.setColor(COLOUR_HEX.cyan));
+    back.on('pointerup', () => this.scene.start(SCENES.Menu));
+  }
+}
