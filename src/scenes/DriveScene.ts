@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, ROAD, TRAM, POWERUP } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, ROAD, TRAM, POWERUP, MESSAGES } from '../config';
 import { LEVELS } from '../data/levels';
 import { PlayerCar } from '../entities/PlayerCar';
 import { OzempicPen } from '../entities/OzempicPen';
@@ -57,8 +57,15 @@ export class DriveScene extends Phaser.Scene {
   private nextPowerupIndex = 0;
   private nextTramIndex = 0;
 
+  private levelId = 1;
+  private endingRun = false;
+
   constructor() {
     super(SCENES.Drive);
+  }
+
+  init(data: { levelId?: number }): void {
+    this.levelId = data.levelId ?? 1;
   }
 
   create(): void {
@@ -67,7 +74,7 @@ export class DriveScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, ROAD.topY, 480, ROAD.bottomY - ROAD.topY);
 
-    const level = LEVELS.find((l) => l.id === 1);
+    const level = LEVELS.find((l) => l.id === this.levelId);
     if (!level) {
       console.error('[Drive] Level 1 (Richmond) missing from levels.ts');
       this.scene.start(SCENES.Menu);
@@ -76,6 +83,20 @@ export class DriveScene extends Phaser.Scene {
     this.levelData = level;
     this.scrollSpeed = level.scrollSpeed;
     this.timeLeft = level.durationMs / 1000;
+
+    // Reset per-run state — Phaser reuses the scene instance across restarts.
+    this.pens = [];
+    this.couriers = [];
+    this.powerups = [];
+    this.trams = [];
+    this.tramWarnings = [];
+    this.score = new Score();
+    this.nextCourierWaveIndex = 0;
+    this.nextPowerupIndex = 0;
+    this.nextTramIndex = 0;
+    this.lastFireTime = 0;
+    this.roadScroll = 0;
+    this.endingRun = false;
 
     // Procedural road (palette tokens, chunky GTA-1 look — no heavy bitmap)
     this.roadBase = this.add.graphics();
@@ -101,7 +122,13 @@ export class DriveScene extends Phaser.Scene {
     this.keyD = kb.addKey('D');
     this.keyS = kb.addKey('S');
     this.fireKey = kb.addKey('SPACE');
-    kb.on('keydown-P', () => this.endLevel());
+    // P quits to menu for now (a proper PauseOverlay comes later).
+    kb.on('keydown-P', () => {
+      if (this.endingRun) return;
+      this.endingRun = true;
+      this.audio?.stopMusic();
+      this.scene.start(SCENES.Menu);
+    });
   }
 
   /** Merge keyboard and touch into a single intent (rule 5). */
@@ -115,7 +142,7 @@ export class DriveScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (!this.player) return;
+    if (!this.player || this.endingRun) return;
 
     this.player.update(delta, Date.now(), this.buildIntent());
 
@@ -140,7 +167,7 @@ export class DriveScene extends Phaser.Scene {
 
     this.timeLeft -= delta / 1000;
     if (this.timeLeft <= 0) {
-      this.endLevel();
+      this.completeLevel();
       return;
     }
     this.refreshHud();
@@ -239,7 +266,7 @@ export class DriveScene extends Phaser.Scene {
         this.couriers.splice(i, 1);
         this.playSfx('heartLost', 0.9);
         if (dead) {
-          this.endLevel(true);
+          this.gameOver('courier');
           return;
         }
       }
@@ -274,7 +301,7 @@ export class DriveScene extends Phaser.Scene {
         tram.destroy();
         this.trams.splice(i, 1);
       } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), tram.getBounds())) {
-        this.endLevel(true);
+        this.gameOver('tram');
         return;
       }
     }
@@ -376,28 +403,37 @@ export class DriveScene extends Phaser.Scene {
     }
   }
 
-  private endLevel(tramDeath = false): void {
+  /** Death — hand off to GameOverScene with the right death-cause line. */
+  private gameOver(cause: 'courier' | 'tram'): void {
+    if (this.endingRun) return;
+    this.endingRun = true;
     this.audio?.stopMusic();
-    const cx = 240;
+    const message = cause === 'tram' ? MESSAGES.tramDeath : this.levelData.deathLine;
+    this.scene.start(SCENES.GameOver, {
+      message,
+      score: this.score.value,
+      levelId: this.levelId,
+    });
+  }
 
+  /** Level cleared — award the clear bonus, show a checkpoint card. */
+  private completeLevel(): void {
+    if (this.endingRun) return;
+    this.endingRun = true;
+    this.audio?.stopMusic();
     this.score.addLevelClear(Math.max(0, this.timeLeft));
 
+    const cx = 240;
     this.add
-      .text(cx, 110, tramDeath ? 'TRAM!' : 'CHECKPOINT', {
-        fontFamily: 'Bungee',
-        fontSize: '24px',
-        color: COLOUR_HEX.text,
-      })
+      .text(cx, 110, 'CHECKPOINT', { fontFamily: 'Bungee', fontSize: '24px', color: COLOUR_HEX.text })
       .setOrigin(0.5);
-
     this.add
-      .text(cx, 140, tramDeath ? 'You got cleaned up by a W-class. Classic Melbourne.' : 'Richmond complete. Good pace.', {
+      .text(cx, 140, `${this.levelData.name} complete. ${MESSAGES.checkpoint}`, {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.cyan,
       })
       .setOrigin(0.5);
-
     this.add
       .text(cx, 160, `SCORE: ${this.score.value}`, {
         fontFamily: 'JetBrains Mono',
@@ -406,6 +442,7 @@ export class DriveScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // TODO: when level 2 (Fitzroy) exists, advance instead of returning to menu.
     this.time.delayedCall(1600, () => this.scene.start(SCENES.Menu));
   }
 }

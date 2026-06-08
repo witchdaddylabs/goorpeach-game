@@ -173,6 +173,17 @@ export const SCORING = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
+/* Copy / messages (dry, Australian — see docs/BRIEF.md)                       */
+/* Per-level courier death lines live with the level in data/levels.ts.        */
+/* -------------------------------------------------------------------------- */
+
+export const MESSAGES = {
+  tramDeath: 'You got cleaned up by a W-class on a cross street. Classic Melbourne.',
+  bossEscape: "He's gone to a Grill'd in Chadstone. You can't follow.",
+  checkpoint: 'Checkpoint. Good pace.',
+} as const;
+
+/* -------------------------------------------------------------------------- */
 /* Gameplay constants — TODO: tune during implementation                       */
 /* -------------------------------------------------------------------------- */
 

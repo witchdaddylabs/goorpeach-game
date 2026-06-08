@@ -52,6 +52,8 @@ export interface LevelConfig {
   courierWaves: CourierWave[];
   powerUpSpawns: PowerUpSpawn[];
   backgroundTileset: string;
+  /** Dry death-cause line shown on GameOver (per docs/BRIEF.md). */
+  deathLine: string;
 }
 
 /** A leaderboard row as returned by the scores API / shown on the board. */

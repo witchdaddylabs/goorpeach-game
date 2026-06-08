@@ -37,5 +37,6 @@ export const LEVELS: LevelConfig[] = [
       { kind: 'boost', triggerMs: 35000 },
     ],
     backgroundTileset: 'procedural',
+    deathLine: 'You got smashed by a cyclist on Brunswick St. Embarrassing.',
   },
 ];
