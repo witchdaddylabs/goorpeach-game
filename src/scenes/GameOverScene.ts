@@ -5,8 +5,9 @@ import { Audio } from '../systems/Audio';
 /** Data passed in from DriveScene when a run ends in death. */
 export interface GameOverData {
   message: string; // resolved death-cause line
-  score: number;
+  score: number; // run total at death (shown)
   levelId: number; // for "Restart Level"
+  restartScore: number; // score the player entered this level with
 }
 
 /**
@@ -53,7 +54,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.createButton('RESTART LEVEL', 180, () => {
-      this.scene.start(SCENES.Drive, { levelId: this.params.levelId });
+      this.scene.start(SCENES.Drive, { levelId: this.params.levelId, score: this.params.restartScore });
     });
     this.createButton('QUIT TO MENU', 210, () => {
       this.scene.start(SCENES.Menu);

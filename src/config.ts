@@ -294,8 +294,7 @@ export const TRAM = {
   lightW: 12,
   lightH: 8,
   flashMs: 180,
-  // Fixed spawn times for level 1 (ms into level)
-  spawnTimes: [12000, 38000],
+  // Note: fixed spawn times are per-level in data/levels.ts (tramSpawnTimes).
 } as const;
 
 /* -------------------------------------------------------------------------- */

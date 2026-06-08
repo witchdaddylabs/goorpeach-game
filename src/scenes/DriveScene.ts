@@ -15,6 +15,7 @@ import { TouchControls } from '../ui/TouchControls';
 import type { CourierBrand, PowerUpKind, SteerIntent } from '../types';
 import { Score } from '../systems/Score';
 import { Audio } from '../systems/Audio';
+import { Persistence } from '../systems/Persistence';
 
 /**
  * DriveScene — the core driving level, parameterised by level id. All level
@@ -59,13 +60,16 @@ export class DriveScene extends Phaser.Scene {
 
   private levelId = 1;
   private endingRun = false;
+  private runScoreSeed = 0; // score carried in from earlier levels this run
+  private levelStartScore = 0; // snapshot for "Restart Level"
 
   constructor() {
     super(SCENES.Drive);
   }
 
-  init(data: { levelId?: number }): void {
+  init(data: { levelId?: number; score?: number }): void {
     this.levelId = data.levelId ?? 1;
+    this.runScoreSeed = data.score ?? 0;
   }
 
   create(): void {
@@ -91,6 +95,8 @@ export class DriveScene extends Phaser.Scene {
     this.trams = [];
     this.tramWarnings = [];
     this.score = new Score();
+    this.score.seed(this.runScoreSeed); // accumulate across the run
+    this.levelStartScore = this.runScoreSeed;
     this.nextCourierWaveIndex = 0;
     this.nextPowerupIndex = 0;
     this.nextTramIndex = 0;
@@ -209,10 +215,8 @@ export class DriveScene extends Phaser.Scene {
       this.nextPowerupIndex += 1;
     }
 
-    while (
-      this.nextTramIndex < TRAM.spawnTimes.length &&
-      elapsed >= (TRAM.spawnTimes[this.nextTramIndex] ?? Infinity)
-    ) {
+    const tramTimes = this.levelData.tramSpawnTimes;
+    while (this.nextTramIndex < tramTimes.length && elapsed >= (tramTimes[this.nextTramIndex] ?? Infinity)) {
       this.spawnTram();
       this.nextTramIndex += 1;
     }
@@ -413,22 +417,27 @@ export class DriveScene extends Phaser.Scene {
       message,
       score: this.score.value,
       levelId: this.levelId,
+      restartScore: this.levelStartScore,
     });
   }
 
-  /** Level cleared — award the clear bonus, show a checkpoint card. */
+  /** Level cleared — award the clear bonus, unlock + advance to the next suburb. */
   private completeLevel(): void {
     if (this.endingRun) return;
     this.endingRun = true;
     this.audio?.stopMusic();
     this.score.addLevelClear(Math.max(0, this.timeLeft));
 
+    const nextId = this.levelId + 1;
+    const next = LEVELS.find((l) => l.id === nextId);
+    Persistence.unlockLevel(nextId); // unlocks the next suburb (or the boss after level 4)
+
     const cx = 240;
     this.add
       .text(cx, 110, 'CHECKPOINT', { fontFamily: 'Bungee', fontSize: '24px', color: COLOUR_HEX.text })
       .setOrigin(0.5);
     this.add
-      .text(cx, 140, `${this.levelData.name} complete. ${MESSAGES.checkpoint}`, {
+      .text(cx, 140, `${this.levelData.name} cleared. ${next ? `On to ${next.name}.` : MESSAGES.checkpoint}`, {
         fontFamily: 'JetBrains Mono',
         fontSize: '9px',
         color: COLOUR_HEX.cyan,
@@ -442,7 +451,14 @@ export class DriveScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // TODO: when level 2 (Fitzroy) exists, advance instead of returning to menu.
-    this.time.delayedCall(1600, () => this.scene.start(SCENES.Menu));
+    const carriedScore = this.score.value;
+    this.time.delayedCall(1600, () => {
+      if (next) {
+        this.scene.start(SCENES.Drive, { levelId: nextId, score: carriedScore });
+      } else {
+        // TODO: after Approaching Kew (level 4), launch BossScene (Kew arena).
+        this.scene.start(SCENES.Menu);
+      }
+    });
   }
 }

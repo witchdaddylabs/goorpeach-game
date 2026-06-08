@@ -51,6 +51,8 @@ export interface LevelConfig {
   scrollSpeed: number;
   courierWaves: CourierWave[];
   powerUpSpawns: PowerUpSpawn[];
+  /** Fixed tram spawn times (ms into level) — predictable per docs/BRIEF.md. */
+  tramSpawnTimes: number[];
   backgroundTileset: string;
   /** Dry death-cause line shown on GameOver (per docs/BRIEF.md). */
   deathLine: string;
