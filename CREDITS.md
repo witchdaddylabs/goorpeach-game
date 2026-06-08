@@ -1,21 +1,63 @@
 # Credits
 
 Asset attribution log. List every source so the project stays audit-clean
-(docs/ASSETS.md). Add entries as assets land — nothing sourced yet.
+(docs/ASSETS.md). Add entries as assets land. 
 
-## Sprites
+**Public Path B sources (free commercial use) we are connecting to / using as bases:**
+See docs/ASSETS.md "Recommended Public Sources (Path B)" for direct links, exact licences, and adaptation notes (recolour to our palette, pixelate to chunky low-res, match frame counts/sizes from the sprite table, brand the couriers, add tram tracks/bike lanes/hazards to roads, etc.).
 
-<!-- e.g. Road tiles — <pack name> by <author>, itch.io, CC0. -->
+## Sprites (bases sourced or recommended)
+
+Downloaded / extracted into public/sprites/ (raw public sources — require adaptation: recolour to palette, pixelate, resize to exact dimensions in ASSETS.md sprite table, create brand variants + animation frames):
+
+- Kenney RPG Urban Pack (CC0) — https://kenney-assets.itch.io/rpg-urban-kit (and direct https://www.kenney.nl/...). Hundreds of individual tiles now in `kenney/` (roads, markings, vehicles, urban details). Primary base for our road tileset + generic car silhouettes.
+- Top-down vehicles sprites pack (CC0) — OpenGameArt (Unlucky Studio), https://opengameart.org/content/free-top-down-car-sprites-by-unlucky-studio. Cars including Audi, Police, Ambulance (with frames), Viper, trucks etc. in `vehicles/`.
+- Large combined road tileset image (CC0) — OpenGameArt "top down Road Tileset", https://opengameart.org/content/top-down-road-tileset. `road_test.png` (big image to slice from).
+
+Still recommended (itch.io "Name your own price = $0" — quick browser download):
+- 2D Top Down Pixel Art Car Pack — marcusvh, https://marcusvh.itch.io/2d-cars (multiple colored cars + truck/trailer).
+- Road Tile Set — chasersgaming, https://chasersgaming.itch.io/road-tile-set (direct roads + lights).
+- Simple scooter Asset (CC0) — styloo, https://styloo.itch.io/scooter (color variants for courier base).
+
+(The above three require one browser visit each to download the zip/PNG after setting price to 0.)
+
+Real files dumped into public/sprites/ (organized under 2D TOP DOWN PIXEL CARS/, kenney/, vehicles/, plus Road_test.png and sprite25_0.png):
+
+- 2D Top Down Pixel Cars pack (marcusvh) — multiple colored sedans, compacts, coupes, sports cars, trucks. Used for playerClean + courier bases.
+- Kenney tiles (CC0) — 486 individual tiles in kenney/ (roads, urban, vehicles).
+- Road assets: sprite25_0.png (chasersgaming), Road_test.png (OpenGameArt).
+- vehicles/ folder (additional top-down cars from OpenGameArt pack).
+
+Full adaptation (recolour to exact GoorPeach/ChewSnog/GorgeRush palette, correct sizes, animations, tram tracks, brand details) still needed per docs/ASSETS.md.
 
 ## Audio
 
-<!-- e.g. Menu loop — <track> from Pixabay, CC0. -->
+Real files the user dumped (now in public/audio/):
+
+- zec53-sci-fi-and-menacing-synth-drums-loop-371304.mp3 → menuLoop
+- freesound_community-video-game-music-loop-27629.mp3 → driving loops
+- freesounds123-car-engine-335601.mp3 → engineRev / various
+- freesound_community-tram-bell-29757.mp3 → tramBell
+- freesound_community-large-crash-with-cataiff-14490.mp3 → crash / impact SFX
+
+Source: freesound.org (verify per-file licence; many are CC0).
+
+Pixabay is still recommended for additional loops (all CC0, direct downloads).
 
 ## Fonts
 
 - **Bungee** — Google Fonts, Open Font Licence.
 - **JetBrains Mono** — Google Fonts, Open Font Licence.
 
-## Generated assets
+## Generated assets (Path A — unique Melbourne / game-specific)
 
-<!-- e.g. The Nerd — generated with <tool>, <date>, <terms>. -->
+(Record tool + date + commercial terms when generated.)
+
+- The Nerd (idle/feed/bolt/hit states)
+- VW Tiguan (parked + driving)
+- W-class tram body + warning lights
+- Suburb landmarks (Skipping Girl sign, Vic Market, MCG, Eastern Fwy overpass, Kew mansion)
+- Glowing food bags (small/medium/large)
+- Ozempic pen projectile
+- Power-up icons (ammo pen, tram boost, parma shield, magpie swoop)
+- Player Commodore damage states + turning animations (after sourcing a base sedan)
