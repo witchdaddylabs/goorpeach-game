@@ -12,5 +12,30 @@ import type { LevelConfig } from '../types';
  * then Fitzroy → Collingwood/Abbotsford → Approaching Kew → Kew boss arena.
  */
 export const LEVELS: LevelConfig[] = [
-  // TODO: define Richmond (id 1) first. See docs/BRIEF.md for the five levels.
+  {
+    id: 1,
+    name: 'Richmond',
+    durationMs: 75000, // ~75 seconds tutorial length
+    scrollSpeed: 140,
+    courierWaves: [
+      // Mild tutorial traffic — predictable spawns
+      {
+        triggerMs: 8000,
+        spawns: [{ brand: 'GoorPeach' }],
+      },
+      {
+        triggerMs: 22000,
+        spawns: [{ brand: 'ChewSnog' }, { brand: 'GoorPeach' }],
+      },
+      {
+        triggerMs: 45000,
+        spawns: [{ brand: 'GorgeRush' }],
+      },
+    ],
+    powerUpSpawns: [
+      { kind: 'ammo', triggerMs: 15000 },
+      { kind: 'boost', triggerMs: 35000 },
+    ],
+    backgroundTileset: 'roadTest',
+  },
 ];

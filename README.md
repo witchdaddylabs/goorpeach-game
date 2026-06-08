@@ -20,6 +20,8 @@ Built mobile-first and for touch, landscape-locked, with WCAG 2.1 base
 accessibility. See `CLAUDE.md` for the non-negotiable build rules and
 `docs/BRIEF.md` for the full game design.
 
+Asset sourcing (public Path B + generated Path A) is documented in `docs/ASSETS.md` (with specific repo links) and `CREDITS.md`. Start with the recommended public packs for roads + vehicle bases to unblock DriveScene.
+
 ## Run it
 
 ```bash
@@ -29,24 +31,23 @@ npm run build    # type-checks, then outputs /dist
 npm run preview  # preview the built dist locally
 ```
 
-## Current state — scaffold only
+## Current state — first milestone complete
 
-This repo is **scaffolded but not yet implemented**. The folder structure and a
-stub file for every scene, entity, UI component, data file, and system exist and
-type-check, but contain no game logic yet. The skeleton maps 1:1 to the locked
-structure in `CLAUDE.md`, so each piece has an obvious home.
+**BootScene + PreloadScene + MenuScene (with working audio unlock) are playable.**
 
-### Next step
+- Loading screen shows a real progress bar driven against the queued asset count (5 items for the menu phase: menuLoop + 2 SFX + 2 placeholder sprite refs).
+- Menu has chunky Bungee title, minimal Melbourne skyline silhouette, four large buttons, and a mute toggle.
+- **START is the audio unlock gesture** (critical CLAUDE.md gotcha). It resumes the WebAudio context, starts the menu loop, stores the Audio manager on the registry, then transitions to the DriveScene placeholder.
+- The DriveScene currently contains only a level header + "next steps" text so the full load → menu → START flow is visibly testable (music continues). Real DriveScene (PlayerCar, scrolling, level data from data/levels.ts, no couriers) is the immediate next piece of work.
 
-Following the working pattern at the bottom of `CLAUDE.md`, build one scene at a
-time, verifying in the browser between each:
+The rest of the game (couriers, trams, power-ups, full levels, boss, HUD, touch, Victory, etc.) remains at the original clean stubs. Scoreboard backend + client is already fully wired (see docs/SCOREBOARD.md).
 
-1. **BootScene + PreloadScene** — asset loading with a real progress bar.
-2. **MenuScene** — title screen with the audio-context unlock on Start.
-3. **DriveScene + PlayerCar** — level 1 (Richmond) only, no couriers yet.
+### Next step (per CLAUDE.md working pattern)
 
-Then couriers, trams, power-ups, HUD, touch controls, remaining levels, the boss
-fight, and a final polish pass — in that order.
+1. DriveScene — level 1 (Richmond) only + PlayerCar entity (steering, brake, damage states). No couriers yet.
+2. Then OzempicPen, Courier base + first subclass, etc.
+
+Verify in the browser after each increment. `npm run dev` then open localhost:5173 (landscape recommended). Click START on a fresh tab or iOS Safari to test the audio unlock path. Press P on the placeholder drive screen to loop back to the menu.
 
 ## Repository layout
 

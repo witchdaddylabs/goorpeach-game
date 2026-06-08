@@ -17,16 +17,16 @@ export interface CourierSpawn {
   // TODO: timing and position fields
 }
 
-/** A timed wave of couriers within a level. TODO: expand. */
+/** A timed wave of couriers within a level. */
 export interface CourierWave {
+  triggerMs: number;
   spawns: CourierSpawn[];
-  // TODO: triggerMs, etc.
 }
 
-/** A fixed power-up placement within a level. TODO: expand. */
+/** A fixed power-up placement within a level. */
 export interface PowerUpSpawn {
   kind: PowerUpKind;
-  // TODO: position / trigger fields
+  triggerMs: number;
 }
 
 /**

@@ -74,15 +74,52 @@ export const SCENES = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/* Asset paths (relative to /public) — TODO: fill in as assets land            */
+/* Asset paths (relative to /public) — see docs/ASSETS.md for full list        */
+/* and recommended production order. Use chunky low-res GTA-1 style.           */
+/* Coloured rects / graphics as placeholders until real PNGs + audio land.     */
 /* -------------------------------------------------------------------------- */
 
 export const SPRITE_PATHS = {
-  // TODO: e.g. playerClean: 'sprites/commodore-clean.png' — see docs/ASSETS.md
+  // Player (VN Commodore) — using real dumped sedan from marcusvh 2D Top Down Pixel Cars pack
+  playerClean: 'sprites/2D TOP DOWN PIXEL CARS/Sedan/sedan_red.png',
+  // TODO: create damaged/wrecked variants + turn animations from the source
+
+  // Couriers — using cars from the same pack as temporary bases (will recolour + reshape)
+  courierScooter: 'sprites/2D TOP DOWN PIXEL CARS/Compact/compact_orange.png', // GoorPeach proxy
+  courierEbike: 'sprites/2D TOP DOWN PIXEL CARS/Coupe/coupe_green.png',       // ChewSnog proxy
+  courierPushbike: 'sprites/2D TOP DOWN PIXEL CARS/Sport/sport_blue.png',     // GorgeRush proxy (later recolour)
+
+  // Road / background — real dumped assets
+  roadTiles: 'sprites/sprite25_0.png',           // chasersgaming road set
+  roadTest: 'sprites/Road_test.png',             // large OpenGameArt road tileset (for scrolling bg)
+
+  // Additional vehicles from other dumped sources (for variety / boss / tram proxies)
+  vehicleAudi: 'sprites/vehicles/Audi.png',
+  vehiclePolice: 'sprites/vehicles/Police.png',
+  vehicleAmbulance: 'sprites/vehicles/Ambulance.png',
+
+  // TODO: the rest (food bags, powerups, tram, landmarks, boss, pen, damage states, animations)
+  // will be added as the unique assets are generated or further sourced.
 } as const;
 
 export const AUDIO_PATHS = {
-  // TODO: e.g. menuLoop: 'audio/menu-loop.mp3' — see docs/ASSETS.md
+  // Real audio dumped by user (from freesound / similar sources)
+  menuLoop: 'audio/zec53-sci-fi-and-menacing-synth-drums-loop-371304.mp3',
+  drivingLoopA: 'audio/freesound_community-video-game-music-loop-27629.mp3',
+  drivingLoopB: 'audio/freesounds123-car-engine-335601.mp3',
+  bossLoop: 'audio/freesound_community-video-game-music-loop-27629.mp3', // reuse for now
+
+  // SFX from the dump
+  ozempicFire: 'audio/freesounds123-car-engine-335601.mp3', // placeholder engine for now
+  courierCrash: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
+  engineRev: 'audio/freesounds123-car-engine-335601.mp3',
+  tiguanStart: 'audio/freesounds123-car-engine-335601.mp3',
+  tramBell: 'audio/freesound_community-tram-bell-29757.mp3',
+  tramImpact: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
+  heartLost: 'audio/car_engine_demo.mp3', // tiny placeholder
+  powerupPickup: 'audio/freesound_community-tram-bell-29757.mp3', // chime-like
+  victorySting: 'audio/freesound_community-video-game-music-loop-27629.mp3',
+  gameoverSting: 'audio/freesound_community-large-crash-with-cataiff-14490.mp3',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -140,5 +177,61 @@ export const SCORING = {
 
 export const PLAYER = {
   startingLives: 3, // 3 hearts — see docs/BRIEF.md
-  // TODO: steerSpeed, brakeForce, hitbox dimensions, etc.
+  // Base dimensions (pixels at 480×270 internal res). Player-favouring hitboxes.
+  width: 48,
+  height: 96,
+  // Steering / movement (tuned from config only)
+  steerSpeed: 220, // px per second lateral
+  forwardSpeed: 140, // base auto-scroll feel (actual level uses scrollSpeed from levels.ts)
+  brakeMultiplier: 0.55,
+  // Collision tuning (forgiving on player side per CLAUDE.md rule 9)
+  hitboxPadding: 8,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Courier constants (from BRIEF.md table + CLAUDE.md rule 1)                */
+/* -------------------------------------------------------------------------- */
+
+export const COURIER = {
+  GoorPeach: {
+    hp: 1,
+    speed: 160,
+    weave: true,
+    weaveAmp: 25,
+    weaveFreq: 2.5,
+  },
+  ChewSnog: {
+    hp: 2,
+    speed: 95,
+    weave: false,
+  },
+  GorgeRush: {
+    hp: 1,
+    speed: 65,
+    weave: false,
+  },
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Tram constants — fixed spawns, 1.5s telegraph, instant death              */
+/* -------------------------------------------------------------------------- */
+
+export const TRAM = {
+  warningMs: 1500,
+  speed: 320,
+  width: 120,
+  height: 40,
+  // For level 1, example fixed spawn times (ms into level)
+  spawnTimes: [12000, 38000],
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Power-up constants (effects applied in DriveScene)                        */
+/* -------------------------------------------------------------------------- */
+
+export const POWERUP = {
+  ammo: { shots: 3 },
+  boost: { multiplier: 1.5, durationMs: 6000 },
+  shield: { absorbs: 1 },
+  magpie: { radius: 70 },
 } as const;
