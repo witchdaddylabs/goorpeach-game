@@ -275,6 +275,7 @@ export const TOUCH = {
   steerZone: { x: 0, y: 140, w: 240, h: 130 },
   brakeZone: { x: 330, y: 170, w: 150, h: 100 },
   fireZone: { x: 330, y: 0, w: 150, h: 110 },
+  moveRange: 40, // px of drag for full deflection (boss arena 2D movement)
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -307,4 +308,35 @@ export const POWERUP = {
   boost: { multiplier: 1.5, durationMs: 6000 },
   shield: { absorbs: 1 },
   magpie: { radius: 70 },
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Boss — The Nerd (Kew arena, two phases). All tuning here; see docs/BRIEF.md */
+/* -------------------------------------------------------------------------- */
+
+export const BOSS = {
+  // Player moves freely within the arena (not lane-locked like driving).
+  arena: { x: 40, y: 60, w: 400, h: 175 },
+  playerSpeed: 155, // px/s
+  playerScale: 0.7,
+  nerd: { x: 240, y: 92, w: 84, h: 78 },
+  feed: {
+    start: 30, // initial feed meter %
+    winAt: 0, // drain to here to beat the boss
+    phase2At: 100, // reaching here triggers the Tiguan escape
+    passiveRisePerSec: 3, // creeps up so the player must keep firing
+    penDrain: 9, // % dropped per pen that hits the nerd
+    deliveryRise: 14, // % gained when a courier reaches the nerd
+    secondWind: 50, // meter reset after surviving an escape (harder)
+  },
+  ammo: { start: 8, max: 12, regenMs: 550 }, // ammo regenerates in the arena
+  feeder: { intervalMs: 1900, speed: 70, scale: 0.5, deliverDist: 30 },
+  fireCooldown: 260,
+  escape: {
+    timeMs: 15000, // 15s to disable the Tiguan
+    tiguanHp: 10, // pen hits to disable
+    tiguanSpeed: 70, // px/s toward the exit
+    tiguanScale: 0.8,
+    exitY: -50, // off the top = escaped
+  },
 } as const;

@@ -14,6 +14,7 @@ import type { SteerIntent } from '../types';
 export class TouchControls {
   private steerPointer: Phaser.Input.Pointer | null = null;
   private steerAnchorX = 0;
+  private steerAnchorY = 0;
   private brakePointer: Phaser.Input.Pointer | null = null;
   private firePending = false;
 
@@ -39,6 +40,7 @@ export class TouchControls {
     } else if (TouchControls.inZone(pointer, TOUCH.steerZone)) {
       this.steerPointer = pointer;
       this.steerAnchorX = pointer.x;
+      this.steerAnchorY = pointer.y;
     } else if (TouchControls.inZone(pointer, TOUCH.brakeZone)) {
       this.brakePointer = pointer;
     }
@@ -64,6 +66,23 @@ export class TouchControls {
 
     const brake = !!this.brakePointer && this.brakePointer.isDown;
     return { left, right, brake };
+  }
+
+  /**
+   * 2D move vector in [-1,1] from the steer-zone drag — used by the boss arena
+   * where the player moves freely rather than steering in lanes.
+   */
+  getMoveVector(): { x: number; y: number } {
+    if (this.steerPointer && this.steerPointer.isDown) {
+      const dx = this.steerPointer.x - this.steerAnchorX;
+      const dy = this.steerPointer.y - this.steerAnchorY;
+      return {
+        x: Phaser.Math.Clamp(dx / TOUCH.moveRange, -1, 1),
+        y: Phaser.Math.Clamp(dy / TOUCH.moveRange, -1, 1),
+      };
+    }
+    this.steerPointer = null;
+    return { x: 0, y: 0 };
   }
 
   /** Edge-triggered fire: true once per tap in the fire zone. */

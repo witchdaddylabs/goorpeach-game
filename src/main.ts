@@ -26,9 +26,10 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
 import { DriveScene } from './scenes/DriveScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { BossScene } from './scenes/BossScene';
 // Later (not started yet):
 // import { LevelSelectScene } from './scenes/LevelSelectScene';
-// import { BossScene } from './scenes/BossScene';
+// import { VictoryScene } from './scenes/VictoryScene';
 // etc.
 
 /** Whether the player's OS asks us to minimise motion (WCAG 2.1). */
@@ -52,7 +53,7 @@ const config: Phaser.Types.Core.GameConfig = {
   // Boot → Preload (progress) → Menu → Drive → GameOver is the playable loop so far.
   // Remaining scenes (Boss, Victory, LevelSelect, Scoreboard) registered as each is
   // implemented to a verifiable state and tested in the browser.
-  scene: [BootScene, PreloadScene, MenuScene, DriveScene, GameOverScene],
+  scene: [BootScene, PreloadScene, MenuScene, DriveScene, GameOverScene, BossScene],
 };
 
 // eslint-disable-next-line no-new -- Phaser.Game registers itself on construction.

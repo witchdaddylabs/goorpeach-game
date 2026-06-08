@@ -8,6 +8,7 @@ export interface GameOverData {
   score: number; // run total at death (shown)
   levelId: number; // for "Restart Level"
   restartScore: number; // score the player entered this level with
+  restartScene?: string; // scene to restart into (default DriveScene; boss uses BossScene)
 }
 
 /**
@@ -54,7 +55,8 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.createButton('RESTART LEVEL', 180, () => {
-      this.scene.start(SCENES.Drive, { levelId: this.params.levelId, score: this.params.restartScore });
+      const target = this.params.restartScene ?? SCENES.Drive;
+      this.scene.start(target, { levelId: this.params.levelId, score: this.params.restartScore });
     });
     this.createButton('QUIT TO MENU', 210, () => {
       this.scene.start(SCENES.Menu);
