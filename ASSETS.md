@@ -1,0 +1,148 @@
+# Assets — GoorPeach Apocalypse
+
+*Complete list of art and sound. Two production paths per asset: generate or source.*
+
+-----
+
+## Sprite list
+
+All top-down view. Transparent PNG. Sliced as sprite sheets where animation needed.
+
+|Asset                                  |Frames                |Size (px)|Notes                                                               |
+|---------------------------------------|----------------------|---------|--------------------------------------------------------------------|
+|Player Commodore — clean               |1                     |64×128   |Faded paint, hi-vis pink hazard accents                             |
+|Player Commodore — damaged (2 HP)      |1                     |64×128   |Cracked windscreen, missing bumper                                  |
+|Player Commodore — wrecked (1 HP)      |1                     |64×128   |Smoke trail, one headlight gone                                     |
+|Player Commodore — turning left        |5-frame anim          |64×128   |Subtle body roll                                                    |
+|Player Commodore — turning right       |5-frame anim          |64×128   |Mirror of left                                                      |
+|GoorPeach scooter + rider              |4-frame wobble loop   |48×80    |Peach orange                                                        |
+|ChewSnog e-bike + rider                |4-frame wobble loop   |48×80    |Bile green                                                          |
+|GorgeRush pushbike + rider             |6-frame pedal loop    |40×72    |Magenta                                                             |
+|Food bag (glowing) — small             |8-frame pulse         |24×24    |Yellow halo                                                         |
+|Food bag (glowing) — medium            |8-frame pulse         |32×32    |Yellow halo, brighter                                               |
+|Food bag (glowing) — large             |8-frame pulse         |40×40    |Yellow halo, brightest                                              |
+|Ozempic pen projectile                 |1                     |16×32    |White / blue, faint glint                                           |
+|Power-up: ammo (Ozempic pen)           |8-frame float         |32×32    |Pen icon                                                            |
+|Power-up: tram-line boost              |8-frame float         |32×32    |Tram-track stripe                                                   |
+|Power-up: parma shield                 |8-frame float         |32×32    |Parma slice icon                                                    |
+|Power-up: magpie swoop                 |8-frame float         |32×32    |Black + white wing                                                  |
+|The Nerd — idle                        |4-frame breath        |256×256  |Patagonia vest over band tee                                        |
+|The Nerd — receiving feed              |4-frame chomp         |256×256  |Inflates each frame                                                 |
+|The Nerd — bolting to Tiguan           |6-frame run           |256×256  |Comically fast for his size                                         |
+|The Nerd — hit by Ozempic              |4-frame wince         |256×256  |Deflates slightly                                                   |
+|VW Tiguan — parked                     |1                     |192×128  |Black, smug grille                                                  |
+|VW Tiguan — driving                    |8-frame wheel-spin    |192×128  |Diesel smoke from exhaust                                           |
+|W-class tram — body                    |4-frame side-roll loop|320×96   |Green + cream, classic Melbourne livery                             |
+|W-class tram — warning lights          |6-frame flash         |64×64    |Red crossing lights, pre-tram telegraph                             |
+|Road tile set                          |64×64 tiles           |—        |Asphalt, painted bike lane, tram tracks, white line, hazard markings|
+|Suburb landmark — Skipping Girl sign   |1                     |128×192  |Abbotsford easter egg                                               |
+|Suburb landmark — Vic Market awning    |1                     |256×96   |Carlton skyline element                                             |
+|Suburb landmark — MCG silhouette       |1                     |384×96   |Horizon element                                                     |
+|Suburb landmark — Eastern Fwy overpass |1                     |320×128  |Level 4 transition                                                  |
+|Suburb landmark — Kew Victorian mansion|1                     |384×256  |Boss arena backdrop                                                 |
+
+-----
+
+## How to produce sprites
+
+Two paths. Mix freely. **All assets at chunky, low-resolution scale** to match the late-90s GTA 1 / Micro Machines reference. Don’t generate at 4K and downscale — generate close to target resolution, or apply heavy pixelation pass after.
+
+### Path A — Generate
+
+**Midjourney / Sora / DALL-E prompt template:**
+
+> top-down 2D game sprite of [SUBJECT], **1997 Grand Theft Auto 1 art style**, chunky low-resolution pixels, flat colour fills, hard edges, no anti-aliasing, no gradient, transparent background, no shadow, [COLOUR] accent, single isolated asset, no text, no logos
+
+Then run through remove.bg (or use the model’s transparent-bg output), pixelate down to target resolution in your editor, and drop into `/public/sprites/`. The pixelation pass is the look — don’t skip it.
+
+**Best for:** the Nerd, the Tiguan, the W-class tram, Commodore damage states, suburb landmarks, food bags. Bespoke stuff that has to match the brief precisely.
+
+### Path B — Source
+
+**itch.io** has thousands of free top-down sprite packs. Search terms that work for the 90s aesthetic:
+
+- “top down car pixel 90s”
+- “GTA 1 style sprite”
+- “16-bit top down car”
+- “road tile pixel” → for the road tile set
+- “Melbourne tram pixel” (long shot, but try)
+
+Filter by “Free” and check the licence per pack. CC0 / public domain is cleanest. Many packs ask for credit only.
+
+**Best for:** road tiles, generic background props, courier base vehicles before brand-painting them.
+
+**Hybrid recommendation:** source the road tiles and generic vehicle silhouettes from itch.io. Generate the bespoke assets (Nerd, Tiguan, W-class tram, Commodore, landmarks, food bags). Saves about 60% of the asset-production time.
+
+### Visual references to share with collaborators
+
+- **Grand Theft Auto 1 (1997)** — primary reference. Top-down Glasgow driving, exact camera angle.
+- **Micro Machines V3 (1997)** — chunky vehicle silhouettes, exaggerated cartoon physics
+- **Streets of SimCity (1998)** — Maxis-era city tops
+- **Crazy Taxi (1999)** — colour saturation and energy
+- **Saved by the Bell title sequence** — Memphis-era pink/cyan/yellow accent palette
+- **VHS / VCR-era graphics** — scanlines, slight signal noise on overlays
+
+-----
+
+## Sound list
+
+|Asset              |Source                         |Duration       |Notes                                   |
+|-------------------|-------------------------------|---------------|----------------------------------------|
+|Menu loop          |Pixabay “synth menacing loop”  |60–90s loopable|Slightly off-kilter, never resolves     |
+|Driving loop A     |Pixabay “driving game loop”    |60s            |Reused: Richmond + Fitzroy              |
+|Driving loop B     |Pixabay “driving game loop”    |60s            |Reused: Collingwood + Kew approach      |
+|Boss loop          |Pixabay “boss battle synth”    |90s loop       |Heavier, stupider, more bass            |
+|Ozempic pen fire   |freesound “laser short”        |<0.5s          |Soft, not aggressive                    |
+|Courier crash      |freesound “comedic crash”      |<1s            |Cartoony, not painful                   |
+|Engine rev         |freesound “car engine v6”      |<2s            |Plays on level start                    |
+|Tiguan diesel start|freesound “diesel engine start”|<2s            |Plays on boss Phase 2 entry             |
+|Tram approach bell |freesound “tram bell ding ding”|1.5s           |Telegraph warning, pans from impact side|
+|Tram impact        |freesound “metal crash heavy”  |1s             |Plays once on instant-death collision   |
+|Heart lost         |freesound “low thud”           |<0.5s          |Muted, regretful                        |
+|Power-up pickup    |freesound “pickup chime”       |<0.5s          |Cheerful but brief                      |
+|Victory sting      |freesound “victory fanfare”    |2–3s           |Synth, not orchestral                   |
+|Game over sting    |freesound “defeat sad trombone”|2–3s           |Lean into the joke                      |
+
+All Pixabay and freesound CC0 audio is free for commercial use, no attribution required. List sources in a `CREDITS.md` anyway — good practice.
+
+-----
+
+## Fonts
+
+Two Google Fonts. Load via `<link>` in `index.html`.
+
+- **Bungee** — for titles, HUD numbers, level cards. Chunky and sign-like. Matches the Melbourne signage vibe.
+- **JetBrains Mono** — for any tabular HUD elements (lives counter, ammo count, level timer).
+
+-----
+
+## Asset production order (parallel to code)
+
+Don’t wait for art to start coding. Use coloured rectangles as placeholders while Claude Code builds mechanics. Drop in real sprites in the polish pass.
+
+Suggested order:
+
+1. Player Commodore (clean) — needed for DriveScene
+1. Three courier base sprites — needed for first wave testing
+1. Ozempic pen projectile — needed for firing mechanic
+1. Power-up sprites (all four)
+1. Road tile set — replaces flat-colour scrolling background
+1. Food bags
+1. HUD icons (heart, ammo, level timer)
+1. Damage state Commodore variants
+1. Suburb landmarks (easter eggs)
+1. The Nerd + Tiguan + boss arena backdrop
+
+Sound can wait until mechanics are locked. Bad timing on placeholder sound is worse than no sound.
+
+-----
+
+## Licensing notes
+
+- **Pixabay audio:** CC0, free for commercial, no attribution required
+- **freesound:** check per-file licence (most are CC0, some are CC-BY which needs attribution)
+- **itch.io packs:** check per-pack — usually CC0 or “free for commercial with credit”
+- **Generated assets** (Midjourney / Sora / DALL-E): check the platform’s commercial terms per your subscription tier. Most paid tiers allow commercial use.
+- **Google Fonts:** all Open Font Licence, free for commercial use, no attribution required
+
+Maintain a `CREDITS.md` in the repo root listing every source even when not required. It’s good hygiene and makes any future audit trivial.
