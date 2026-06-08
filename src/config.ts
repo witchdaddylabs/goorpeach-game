@@ -89,9 +89,10 @@ export const SPRITE_PATHS = {
   courierEbike: 'sprites/2D TOP DOWN PIXEL CARS/Coupe/coupe_green.png',       // ChewSnog proxy
   courierPushbike: 'sprites/2D TOP DOWN PIXEL CARS/Sport/sport_blue.png',     // GorgeRush proxy (later recolour)
 
-  // Road / background — real dumped assets
+  // Road / background — the road itself is drawn procedurally (palette tokens,
+  // chunky GTA-1 look) so no heavy background bitmap ships. Kept tileset ref for
+  // future detail props.
   roadTiles: 'sprites/sprite25_0.png',           // chasersgaming road set
-  roadTest: 'sprites/Road_test.png',             // large OpenGameArt road tileset (for scrolling bg)
 
   // Additional vehicles from other dumped sources (for variety / boss / tram proxies)
   vehicleAudi: 'sprites/vehicles/Audi.png',
@@ -172,11 +173,24 @@ export const SCORING = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
+/* Copy / messages (dry, Australian — see docs/BRIEF.md)                       */
+/* Per-level courier death lines live with the level in data/levels.ts.        */
+/* -------------------------------------------------------------------------- */
+
+export const MESSAGES = {
+  tramDeath: 'You got cleaned up by a W-class on a cross street. Classic Melbourne.',
+  bossEscape: "He's gone to a Grill'd in Chadstone. You can't follow.",
+  checkpoint: 'Checkpoint. Good pace.',
+} as const;
+
+/* -------------------------------------------------------------------------- */
 /* Gameplay constants — TODO: tune during implementation                       */
 /* -------------------------------------------------------------------------- */
 
 export const PLAYER = {
   startingLives: 3, // 3 hearts — see docs/BRIEF.md
+  startingAmmo: 5, // tutorial ammo
+  scale: 0.85,
   // Base dimensions (pixels at 480×270 internal res). Player-favouring hitboxes.
   width: 48,
   height: 96,
@@ -184,8 +198,22 @@ export const PLAYER = {
   steerSpeed: 220, // px per second lateral
   forwardSpeed: 140, // base auto-scroll feel (actual level uses scrollSpeed from levels.ts)
   brakeMultiplier: 0.55,
+  boostMultiplier: 1.5,
   // Collision tuning (forgiving on player side per CLAUDE.md rule 9)
   hitboxPadding: 8,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Ozempic pen projectile                                                      */
+/* -------------------------------------------------------------------------- */
+
+export const PEN = {
+  speed: 480, // px/s up the screen
+  scaleX: 0.22,
+  scaleY: 0.55,
+  tint: 0xaaddff,
+  muzzleOffsetY: 30, // spawn this far ahead of the car
+  despawnY: 20, // cull above this line
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -193,23 +221,60 @@ export const PLAYER = {
 /* -------------------------------------------------------------------------- */
 
 export const COURIER = {
+  scale: 0.72,
+  hitGenerosity: 4, // px expansion of courier hitbox when player shoots (rule 9)
   GoorPeach: {
     hp: 1,
     speed: 160,
     weave: true,
-    weaveAmp: 25,
-    weaveFreq: 2.5,
+    weaveAmp: 25, // px lateral
+    weaveFreq: 2.5, // oscillations per second
   },
   ChewSnog: {
     hp: 2,
     speed: 95,
     weave: false,
+    weaveAmp: 0,
+    weaveFreq: 0,
   },
   GorgeRush: {
     hp: 1,
     speed: 65,
     weave: false,
+    weaveAmp: 0,
+    weaveFreq: 0,
   },
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Road background (drawn procedurally) + lanes                               */
+/* -------------------------------------------------------------------------- */
+
+export const ROAD = {
+  topY: 40, // play area top (below HUD band)
+  bottomY: 230, // play area bottom
+  footpathWidth: 56, // cream verge each side
+  laneXs: [170, 240, 310], // courier / power-up lane centres
+  // Scrolling dashed centre lines
+  lineColumns: [205, 275], // x positions of dashed lane dividers
+  dashLength: 22,
+  dashGap: 20,
+  dashWidth: 4,
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Touch controls (mobile-first — ui/TouchControls.ts)                         */
+/* -------------------------------------------------------------------------- */
+
+export const TOUCH = {
+  steerDeadzone: 8, // px from anchor before a drag counts as left/right
+  showHints: true, // faint zone overlays on touch devices
+  hintAlpha: 0.12,
+  // Input zones in internal 480×270 coords (per docs/BRIEF.md):
+  //   drag lower-left to steer, hold lower-right to brake, tap upper-right to fire.
+  steerZone: { x: 0, y: 140, w: 240, h: 130 },
+  brakeZone: { x: 330, y: 170, w: 150, h: 100 },
+  fireZone: { x: 330, y: 0, w: 150, h: 110 },
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -217,12 +282,19 @@ export const COURIER = {
 /* -------------------------------------------------------------------------- */
 
 export const TRAM = {
-  warningMs: 1500,
+  warningMs: 1500, // telegraph lead time before the tram arrives
   speed: 320,
   width: 120,
   height: 40,
-  // For level 1, example fixed spawn times (ms into level)
-  spawnTimes: [12000, 38000],
+  spawnX: 240, // tram enters down the centre cross-street
+  spawnY: 20,
+  // Flashing crossing-light telegraph
+  lightXs: [180, 288],
+  lightY: 20,
+  lightW: 12,
+  lightH: 8,
+  flashMs: 180,
+  // Note: fixed spawn times are per-level in data/levels.ts (tramSpawnTimes).
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -230,6 +302,7 @@ export const TRAM = {
 /* -------------------------------------------------------------------------- */
 
 export const POWERUP = {
+  visualRadius: 10, // chunky pickup icon radius
   ammo: { shots: 3 },
   boost: { multiplier: 1.5, durationMs: 6000 },
   shield: { absorbs: 1 },

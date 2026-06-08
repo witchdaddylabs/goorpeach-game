@@ -38,5 +38,17 @@ export class Persistence {
     Persistence.write(STORAGE_KEYS.localScores, scores);
   }
 
-  // TODO: getUnlockedLevel/setUnlockedLevel, getSettings/setSettings.
+  /** Highest level the player has unlocked (1-based). Defaults to level 1. */
+  static getHighestUnlocked(): number {
+    return Persistence.read<number>(STORAGE_KEYS.highestUnlockedLevel, 1);
+  }
+
+  /** Record a newly reached level if it beats the stored high-water mark. */
+  static unlockLevel(level: number): void {
+    if (level > Persistence.getHighestUnlocked()) {
+      Persistence.write(STORAGE_KEYS.highestUnlockedLevel, level);
+    }
+  }
+
+  // TODO: getSettings/setSettings.
 }

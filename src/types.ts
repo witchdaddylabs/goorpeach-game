@@ -11,6 +11,16 @@ export type CourierBrand = 'GoorPeach' | 'ChewSnog' | 'GorgeRush';
 /** Power-up kinds (fixed spawns, no RNG — see docs/BRIEF.md). */
 export type PowerUpKind = 'ammo' | 'boost' | 'shield' | 'magpie';
 
+/**
+ * Per-frame steering intent. The scene merges keyboard and touch into this, so
+ * entities never branch on input source (CLAUDE.md rule 5).
+ */
+export interface SteerIntent {
+  left: boolean;
+  right: boolean;
+  brake: boolean;
+}
+
 /** A single courier spawn within a wave. TODO: expand (lane, delay, etc.). */
 export interface CourierSpawn {
   brand: CourierBrand;
@@ -41,7 +51,11 @@ export interface LevelConfig {
   scrollSpeed: number;
   courierWaves: CourierWave[];
   powerUpSpawns: PowerUpSpawn[];
+  /** Fixed tram spawn times (ms into level) — predictable per docs/BRIEF.md. */
+  tramSpawnTimes: number[];
   backgroundTileset: string;
+  /** Dry death-cause line shown on GameOver (per docs/BRIEF.md). */
+  deathLine: string;
 }
 
 /** A leaderboard row as returned by the scores API / shown on the board. */

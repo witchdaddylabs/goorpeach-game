@@ -19,6 +19,11 @@ export class Score {
     this.total = 0;
   }
 
+  /** Seed the running total — used to carry score across levels in one run. */
+  seed(value: number): void {
+    this.total = value;
+  }
+
   /** A courier was taken out — points depend on brand difficulty. */
   addCourier(brand: CourierBrand): void {
     this.total += SCORING.courierPoints[brand];

@@ -37,9 +37,9 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('courierEbike', SPRITE_PATHS.courierEbike);
     this.load.image('courierPushbike', SPRITE_PATHS.courierPushbike);
 
-    // Road / background assets from the dump
+    // Road tiles kept for future detail props; the scrolling road itself is
+    // drawn procedurally in DriveScene (no heavy background bitmap).
     this.load.image('roadTiles', SPRITE_PATHS.roadTiles);
-    this.load.image('roadTest', SPRITE_PATHS.roadTest || 'sprites/Road_test.png');
 
     // Extra vehicles
     if (SPRITE_PATHS.vehicleAudi) this.load.image('vehicleAudi', SPRITE_PATHS.vehicleAudi);

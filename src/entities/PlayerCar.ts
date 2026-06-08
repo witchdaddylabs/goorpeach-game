@@ -1,41 +1,36 @@
-/**
- * PlayerCar — the VN Commodore. Steering, braking, and three damage states
- * (clean → cracked → wrecked). Player-favouring hitbox (CLAUDE.md rule 9).
- * All numbers from config.ts.
- *
- * Implemented for DriveScene level 1 (Richmond only, no couriers yet).
- */
 import Phaser from 'phaser';
-import { PLAYER } from '../config';
+import { PLAYER, ROAD } from '../config';
+import type { SteerIntent } from '../types';
 
+/**
+ * PlayerCar — the VN Commodore. Steering, braking, and (later) three damage
+ * states. Player-favouring hitbox (CLAUDE.md rule 9). All numbers from config.ts.
+ *
+ * Input-agnostic: the scene passes a SteerIntent each frame built from keyboard
+ * and/or touch, so this entity never reads the keyboard directly (rule 5).
+ */
 export class PlayerCar {
-  sprite: Phaser.Physics.Arcade.Sprite;
-  private scene: Phaser.Scene;
-  private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+  readonly sprite: Phaser.Physics.Arcade.Sprite;
+  private readonly scene: Phaser.Scene;
   private currentSpeed: number;
-  private maxSpeed: number;
-  private steerSpeed: number;
+  private readonly maxSpeed: number;
+  private readonly steerSpeed: number;
 
   lives: number;
-  ammo: number = 5; // starting ammo for tutorial
-  hasShield: boolean = false;
-  boostEndTime: number = 0;
+  ammo: number = PLAYER.startingAmmo;
+  hasShield = false;
+  boostEndTime = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     this.scene = scene;
     this.sprite = scene.physics.add.sprite(x, y, texture);
-    this.sprite.setScale(0.85);
+    this.sprite.setScale(PLAYER.scale);
     this.sprite.setOrigin(0.5, 0.5);
 
-    this.sprite.body!.setSize(
+    this.sprite.body?.setSize(
       this.sprite.width - PLAYER.hitboxPadding * 2,
-      this.sprite.height - PLAYER.hitboxPadding * 2
+      this.sprite.height - PLAYER.hitboxPadding * 2,
     );
-
-    this.cursors = scene.input.keyboard!.createCursorKeys();
-    this.cursors.left = scene.input.keyboard!.addKey('A');
-    this.cursors.right = scene.input.keyboard!.addKey('D');
-    this.cursors.down = scene.input.keyboard!.addKey('S');
 
     this.maxSpeed = PLAYER.forwardSpeed;
     this.currentSpeed = this.maxSpeed;
@@ -43,36 +38,27 @@ export class PlayerCar {
     this.lives = PLAYER.startingLives;
   }
 
-  update(delta: number, now: number): void {
+  update(delta: number, now: number, intent: SteerIntent): void {
     const dt = delta / 1000;
     const sprite = this.sprite;
 
-    // Apply boost if active
-    const speedMult = (now < this.boostEndTime) ? 1.5 : 1.0;
+    const speedMult = now < this.boostEndTime ? PLAYER.boostMultiplier : 1.0;
     const effectiveSteer = this.steerSpeed * speedMult;
 
-    if (this.cursors.left.isDown) {
-      sprite.x -= effectiveSteer * dt;
-    }
-    if (this.cursors.right.isDown) {
-      sprite.x += effectiveSteer * dt;
-    }
+    if (intent.left) sprite.x -= effectiveSteer * dt;
+    if (intent.right) sprite.x += effectiveSteer * dt;
 
-    if (this.cursors.down.isDown) {
+    if (intent.brake) {
       this.currentSpeed = Math.max(this.maxSpeed * PLAYER.brakeMultiplier, 40);
     } else {
-      this.currentSpeed = Phaser.Math.Linear(
-        this.currentSpeed,
-        this.maxSpeed,
-        0.08
-      );
+      this.currentSpeed = Phaser.Math.Linear(this.currentSpeed, this.maxSpeed, 0.08);
     }
 
     const targetY = 135 + (this.currentSpeed - this.maxSpeed) * 0.1;
     sprite.y = Phaser.Math.Linear(sprite.y, targetY, 0.1);
 
     const halfW = sprite.displayWidth / 2;
-    sprite.x = Phaser.Math.Clamp(sprite.x, 60 + halfW, 420 - halfW);
+    sprite.x = Phaser.Math.Clamp(sprite.x, ROAD.footpathWidth + halfW, 480 - ROAD.footpathWidth - halfW);
     sprite.y = Phaser.Math.Clamp(sprite.y, 70, 200);
   }
 
@@ -90,7 +76,7 @@ export class PlayerCar {
       return false;
     }
 
-    this.lives--;
+    this.lives -= 1;
     this.sprite.setTint(0xffaaaa);
     this.scene.time.delayedCall(250, () => {
       if (this.sprite?.active) this.sprite.clearTint();
@@ -116,6 +102,6 @@ export class PlayerCar {
   }
 
   consumeAmmo(): void {
-    if (this.ammo > 0) this.ammo--;
+    if (this.ammo > 0) this.ammo -= 1;
   }
 }

@@ -24,9 +24,11 @@ import { GAME_WIDTH, GAME_HEIGHT, COLOUR_HEX } from './config';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
+import { DriveScene } from './scenes/DriveScene';
+import { GameOverScene } from './scenes/GameOverScene';
 // Later (not started yet):
 // import { LevelSelectScene } from './scenes/LevelSelectScene';
-// import { DriveScene } from './scenes/DriveScene';
+// import { BossScene } from './scenes/BossScene';
 // etc.
 
 /** Whether the player's OS asks us to minimise motion (WCAG 2.1). */
@@ -47,10 +49,10 @@ const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  // Boot → Preload (progress) → Menu is the first playable per CLAUDE.md working pattern.
-  // Other scenes (Drive, Boss, Scoreboard, etc.) added incrementally as we implement
-  // one piece to a verifiable state and test in the browser.
-  scene: [BootScene, PreloadScene, MenuScene],
+  // Boot → Preload (progress) → Menu → Drive → GameOver is the playable loop so far.
+  // Remaining scenes (Boss, Victory, LevelSelect, Scoreboard) registered as each is
+  // implemented to a verifiable state and tested in the browser.
+  scene: [BootScene, PreloadScene, MenuScene, DriveScene, GameOverScene],
 };
 
 // eslint-disable-next-line no-new -- Phaser.Game registers itself on construction.

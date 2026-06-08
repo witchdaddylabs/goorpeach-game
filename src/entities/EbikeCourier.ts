@@ -1,11 +1,12 @@
+import Phaser from 'phaser';
 import { Courier } from './Courier';
-import type { CourierBrand } from '../types';
 
 /**
  * EbikeCourier — ChewSnog (bile green). Tanky, holds its lane, 2 HP.
- *
- * TODO: implement. See CLAUDE.md working pattern, step 7.
+ * Behaviour numbers come from COURIER.ChewSnog in config.ts.
  */
 export class EbikeCourier extends Courier {
-  readonly brand: CourierBrand = 'ChewSnog';
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+    super(scene, x, y, texture, 'ChewSnog');
+  }
 }

@@ -1,11 +1,12 @@
+import Phaser from 'phaser';
 import { Courier } from './Courier';
-import type { CourierBrand } from '../types';
 
 /**
  * ScooterCourier — GoorPeach (peach orange). Fast, weaves erratically, 1 HP.
- *
- * TODO: implement. See CLAUDE.md working pattern, step 6.
+ * Behaviour numbers come from COURIER.GoorPeach in config.ts.
  */
 export class ScooterCourier extends Courier {
-  readonly brand: CourierBrand = 'GoorPeach';
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+    super(scene, x, y, texture, 'GoorPeach');
+  }
 }
