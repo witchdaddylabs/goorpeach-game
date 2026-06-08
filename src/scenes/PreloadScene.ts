@@ -1,15 +1,10 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, AUDIO_PATHS, SPRITE_PATHS } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, AUDIO_PATHS, SPRITE_PATHS, SPRITE_SHEETS, ANIMS } from '../config';
 import { getLayout } from '../systems/Layout';
 
 /**
  * PreloadScene — loads all assets with a real progress bar drawn against the
  * actual asset count (no vague spinner — CLAUDE.md).
- *
- * For the first milestone we load a minimal set (menu music + early SFX + two
- * placeholder sprite references). Real files per docs/ASSETS.md will be dropped
- * into public/ later; missing files are expected and logged at info level only.
- * The bar is driven by Phaser's loader progress events.
  */
 export class PreloadScene extends Phaser.Scene {
   private progressBar!: Phaser.GameObjects.Graphics;
@@ -22,23 +17,23 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Progress UI must exist before loader events fire (preload runs before create).
     this.buildProgressUi();
 
-    // Real assets the user dumped into public/sprites and public/audio.
-    // We now load the actual files so the progress bar and game use real content.
-
-    // Every AUDIO_PATHS key must be preloaded — Phaser keys are not shared by path.
     for (const [key, path] of Object.entries(AUDIO_PATHS)) {
       this.load.audio(key, path);
     }
 
-    // All sprite paths — Phaser texture key matches the config key
     for (const [key, path] of Object.entries(SPRITE_PATHS)) {
       this.load.image(key, path);
     }
 
-    // Real progress bar driven by actual loads
+    for (const [key, sheet] of Object.entries(SPRITE_SHEETS)) {
+      this.load.spritesheet(key, sheet.path, {
+        frameWidth: sheet.frameWidth,
+        frameHeight: sheet.frameHeight,
+      });
+    }
+
     this.load.on('progress', (progress: number) => {
       this.updateProgressBar(progress);
     });
@@ -54,19 +49,31 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     this.load.on('complete', () => {
+      this.registerAnimations();
       this.time.delayedCall(90, () => {
         this.scene.start(SCENES.Menu);
       });
     });
   }
 
+  /** Register all config-driven sprite animations once textures are ready. */
+  private registerAnimations(): void {
+    for (const [key, def] of Object.entries(ANIMS)) {
+      if (this.anims.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(def.sheet, { start: def.start, end: def.end }),
+        frameRate: def.rate,
+        repeat: def.repeat,
+      });
+    }
+  }
+
   private buildProgressUi(): void {
     const { width, height, centerX, centerY } = getLayout();
 
-    // Dark road background
     this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
 
-    // Chunky title using Bungee (fonts loaded in index.html)
     this.add
       .text(centerX, centerY - height * 0.19, 'GOORPEACH', {
         fontFamily: 'Bungee',
@@ -85,15 +92,12 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Progress box (cream outline, hard)
     this.progressBox = this.add.graphics();
     this.progressBox.lineStyle(2, COLOURS.text, 0.9);
     this.progressBox.strokeRect(centerX - 70, centerY + 8, 140, 14);
 
-    // Dynamic fill bar (cyan / hazard accent)
     this.progressBar = this.add.graphics();
 
-    // Percentage (JetBrains Mono for tabular/arcade numeric feel)
     this.percentText = this.add
       .text(centerX, centerY + 32, '0%', {
         fontFamily: 'JetBrains Mono',
@@ -102,7 +106,6 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Current asset key (tiny, shows it's actually counting real queued items)
     this.assetText = this.add
       .text(centerX, centerY + 48, '', {
         fontFamily: 'JetBrains Mono',

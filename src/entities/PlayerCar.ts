@@ -12,6 +12,7 @@ export class PlayerCar {
   private currentSpeed: number;
   private readonly maxSpeed: number;
   private readonly steerSpeed: number;
+  private steering: 'left' | 'right' | 'none' = 'none';
 
   lives: number;
   ammo: number = PLAYER.startingAmmo;
@@ -37,9 +38,10 @@ export class PlayerCar {
     this.applyDamageVisual();
   }
 
-  /** Progressive Commodore damage — worn sprite, then hazard tint on last heart. */
+  /** Progressive Commodore damage — worn sprite, then wrecked tint on last heart. */
   applyDamageVisual(): void {
     const sprite = this.sprite;
+    sprite.stop();
     if (this.lives >= PLAYER.wornBelowLives) {
       sprite.setTexture(PLAYER.textures.clean);
       sprite.clearTint();
@@ -50,6 +52,41 @@ export class PlayerCar {
       sprite.setTexture(PLAYER.textures.wrecked);
       sprite.setTint(PLAYER.hitFlashTint);
     }
+    sprite.setAngle(0);
+  }
+
+  private applySteerVisual(intent: SteerIntent): void {
+    const sprite = this.sprite;
+    const clean = this.lives >= PLAYER.wornBelowLives;
+
+    if (clean) {
+      if (intent.left && !intent.right) {
+        if (this.steering !== 'left') {
+          this.steering = 'left';
+          sprite.play({ key: 'playerTurnLeft', repeat: 0 }, true);
+        }
+      } else if (intent.right && !intent.left) {
+        if (this.steering !== 'right') {
+          this.steering = 'right';
+          sprite.play({ key: 'playerTurnRight', repeat: 0 }, true);
+        }
+      } else if (!intent.left && !intent.right) {
+        if (this.steering !== 'none') {
+          this.steering = 'none';
+          sprite.stop();
+          this.applyDamageVisual();
+        }
+      }
+      return;
+    }
+
+    const target =
+      intent.left && !intent.right
+        ? -PLAYER.turnAngle
+        : intent.right && !intent.left
+          ? PLAYER.turnAngle
+          : 0;
+    sprite.angle = Phaser.Math.Linear(sprite.angle, target, PLAYER.turnLerp);
   }
 
   update(delta: number, now: number, intent: SteerIntent): void {
@@ -62,6 +99,8 @@ export class PlayerCar {
 
     if (intent.left) sprite.x -= effectiveSteer * dt;
     if (intent.right) sprite.x += effectiveSteer * dt;
+
+    this.applySteerVisual(intent);
 
     const brakeFloor = this.maxSpeed * PLAYER.brakeMinRatio;
 
@@ -99,6 +138,7 @@ export class PlayerCar {
     }
 
     this.lives -= 1;
+    this.steering = 'none';
     this.sprite.setTint(PLAYER.hitFlashTint);
     this.scene.time.delayedCall(PLAYER.hitFlashMs, () => {
       if (this.sprite?.active) this.applyDamageVisual();

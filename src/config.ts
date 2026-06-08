@@ -87,8 +87,15 @@ export const SPRITE_PATHS = {
   playerWorn: 'sprites/generated/player-worn.png',
   playerWrecked: 'sprites/generated/player-wrecked.png',
 
-  // Couriers — scooter sprite; e-bike / pushbike remain procedural (entities/Courier.ts)
+  // Couriers — Grok-generated brand sprites
   courierScooter: 'sprites/generated/courier-scooter.png',
+  courierEbike: 'sprites/generated/courier-ebike.png',
+  courierPushbike: 'sprites/generated/courier-pushbike.png',
+  foodBag: 'sprites/generated/food-bag.png',
+
+  // Player turn frames (composed into sheets at build time)
+  playerTurnLeft: 'sprites/generated/player-turn-left.png',
+  playerTurnRight: 'sprites/generated/player-turn-right.png',
 
   // Road / background — procedural scroll; tileset kept for future detail props
   roadTiles: 'sprites/sprite25_0.png',
@@ -104,9 +111,13 @@ export const SPRITE_PATHS = {
   powerupShield: 'sprites/generated/powerup-shield.png',
   powerupMagpie: 'sprites/generated/powerup-magpie.png',
 
-  // Boss arena (Kew)
+  // Boss arena (Kew) — Nerd state sprites + Tiguan drive frame
   bossNerd: 'sprites/generated/boss-nerd.png',
+  bossNerdFeed: 'sprites/generated/boss-nerd-feed.png',
+  bossNerdHit: 'sprites/generated/boss-nerd-hit.png',
+  bossNerdBolt: 'sprites/generated/boss-nerd-bolt.png',
   bossTiguan: 'sprites/generated/boss-tiguan.png',
+  bossTiguanDrive: 'sprites/generated/boss-tiguan-drive.png',
   landmarkKewMansion: 'sprites/generated/landmark-kew-mansion.png',
 
   // Suburb landmarks (easter eggs per level)
@@ -118,6 +129,30 @@ export const SPRITE_PATHS = {
   vehicleAudi: 'sprites/vehicles/Audi.png',
   vehiclePolice: 'sprites/vehicles/Police.png',
   vehicleAmbulance: 'sprites/vehicles/Ambulance.png',
+} as const;
+
+/** Horizontal sprite sheets — frame size + path; keys match PreloadScene texture names. */
+export const SPRITE_SHEETS = {
+  courierScooterSheet: { path: 'sprites/generated/courier-scooter-sheet.png', frameWidth: 48, frameHeight: 80 },
+  courierEbikeSheet: { path: 'sprites/generated/courier-ebike-sheet.png', frameWidth: 48, frameHeight: 80 },
+  courierPushbikeSheet: { path: 'sprites/generated/courier-pushbike-sheet.png', frameWidth: 40, frameHeight: 72 },
+  foodBagSheet: { path: 'sprites/generated/food-bag-sheet.png', frameWidth: 24, frameHeight: 24 },
+  playerTurnLeftSheet: { path: 'sprites/generated/player-turn-left-sheet.png', frameWidth: 64, frameHeight: 128 },
+  playerTurnRightSheet: { path: 'sprites/generated/player-turn-right-sheet.png', frameWidth: 64, frameHeight: 128 },
+  tramBodySheet: { path: 'sprites/generated/tram-body-sheet.png', frameWidth: 320, frameHeight: 96 },
+  tiguanDriveSheet: { path: 'sprites/generated/tiguan-drive-sheet.png', frameWidth: 96, frameHeight: 64 },
+} as const;
+
+/** Phaser animation definitions — registered in PreloadScene.create(). */
+export const ANIMS = {
+  courierScooterWobble: { sheet: 'courierScooterSheet', start: 0, end: 3, rate: 8, repeat: -1 },
+  courierEbikeWobble: { sheet: 'courierEbikeSheet', start: 0, end: 3, rate: 6, repeat: -1 },
+  courierPushbikePedal: { sheet: 'courierPushbikeSheet', start: 0, end: 3, rate: 10, repeat: -1 },
+  foodBagPulse: { sheet: 'foodBagSheet', start: 0, end: 3, rate: 6, repeat: -1 },
+  playerTurnLeft: { sheet: 'playerTurnLeftSheet', start: 0, end: 4, rate: 14, repeat: 0 },
+  playerTurnRight: { sheet: 'playerTurnRightSheet', start: 0, end: 4, rate: 14, repeat: 0 },
+  tramRoll: { sheet: 'tramBodySheet', start: 0, end: 3, rate: 8, repeat: -1 },
+  tiguanDrive: { sheet: 'tiguanDriveSheet', start: 0, end: 1, rate: 6, repeat: -1 },
 } as const;
 
 export const AUDIO_PATHS = {
@@ -366,6 +401,9 @@ export const PLAYER = {
   hitFlashMs: 250,
   shieldTint: COLOURS.bile,
   shieldFlashMs: 300,
+  /** Body-roll when steering (clean sprite turn sheets). */
+  turnAngle: 8,
+  turnLerp: 0.28,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -382,6 +420,25 @@ export const COURIER = {
     ChewSnog: { w: 18, h: 24 },
     GorgeRush: { w: 14, h: 26 },
   } as const,
+  /** On-screen sprite size (larger than hitbox for readability). */
+  displaySize: {
+    GoorPeach: { w: 24, h: 40 },
+    ChewSnog: { w: 24, h: 40 },
+    GorgeRush: { w: 20, h: 36 },
+  } as const,
+  /** Spritesheet texture keys per brand. */
+  sheet: {
+    GoorPeach: 'courierScooterSheet',
+    ChewSnog: 'courierEbikeSheet',
+    GorgeRush: 'courierPushbikeSheet',
+  } as const,
+  /** Looping wobble / pedal animations per brand. */
+  anim: {
+    GoorPeach: 'courierScooterWobble',
+    ChewSnog: 'courierEbikeWobble',
+    GorgeRush: 'courierPushbikePedal',
+  } as const,
+  foodBagSize: 12,
   brandColour: {
     GoorPeach: COLOURS.hazard,
     ChewSnog: COLOURS.bile,
@@ -599,6 +656,8 @@ export const TRAM = {
 export const POWERUP = {
   visualRadius: 12, // hit radius for collection
   iconSize: 24, // display size for sprite icons
+  floatAmp: 3, // px bob amplitude
+  floatHz: 1.2, // bob frequency
   spawnAboveRoad: 28, // scrolls down with the road into the player band
   textures: {
     ammo: 'powerupAmmo',
@@ -621,7 +680,22 @@ export const BOSS = {
   arena: { x: 40, y: 60, w: 400, h: 175 },
   playerSpeed: 155, // px/s
   playerScale: 0.7,
-  nerd: { x: 240, y: 92, w: 84, h: 78, texture: 'bossNerd' },
+  nerd: {
+    x: 240,
+    y: 92,
+    w: 84,
+    h: 78,
+    texture: 'bossNerd',
+    textures: {
+      idle: 'bossNerd',
+      feed: 'bossNerdFeed',
+      hit: 'bossNerdHit',
+      bolt: 'bossNerdBolt',
+    },
+    feedFlashMs: 450,
+    hitFlashMs: 220,
+    boltRunMs: 380,
+  },
   feed: {
     start: 30, // initial feed meter %
     winAt: 0, // drain to here to beat the boss
@@ -639,7 +713,8 @@ export const BOSS = {
     tiguanHp: 8, // pen hits to disable
     tiguanSpeed: 70, // px/s toward the exit
     tiguanScale: 0.85,
-    tiguanTexture: 'bossTiguan',
+    tiguanTexture: 'tiguanDriveSheet',
+    tiguanAnim: 'tiguanDrive',
     exitY: -50, // off the top = escaped
   },
 } as const;

@@ -6,7 +6,7 @@ export type TramDirection = 'left' | 'right';
 
 /** Tram — W-class crosses horizontally from a side street (docs/BRIEF.md). */
 export class Tram {
-  readonly body: Phaser.GameObjects.Image;
+  readonly body: Phaser.GameObjects.Sprite;
   private readonly velocityX: number;
   readonly crossY: number;
 
@@ -20,10 +20,13 @@ export class Tram {
     const startX = direction === 'left' ? -length / 2 : width + length / 2;
     this.velocityX = direction === 'left' ? speed : -speed;
 
-    this.body = scene.add.image(startX, crossY, 'tramBody');
+    this.body = scene.add.sprite(startX, crossY, 'tramBodySheet');
     this.body.setDisplaySize(length, TRAM.height);
     this.body.setOrigin(0.5, 0.5);
     this.body.setDepth(9);
+    if (scene.anims.exists('tramRoll')) {
+      this.body.play('tramRoll');
+    }
   }
 
   update(delta: number): void {

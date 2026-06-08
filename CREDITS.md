@@ -65,4 +65,12 @@ Generated with Grok Imagine (2026-06-09), pixelated to target resolution, integr
 - Suburb landmarks — Skipping Girl, Vic Market, MCG, Kew mansion — `landmark-*.png`
 - GoorPeach scooter courier base — `courier-scooter.png`
 
-Still procedural / not yet generated: e-bike and pushbike courier sprites, food bag pulse animations, player turn animations, Nerd animation states (idle/feed/bolt/hit), Tiguan driving frames.
+Additional generated assets (2026-06-09 batch):
+- ChewSnog e-bike + GorgeRush pushbike couriers — `courier-ebike.png`, `courier-pushbike.png`
+- Glowing food bag + 4-frame pulse sheet — `food-bag.png`, `food-bag-sheet.png`
+- Player turn left/right 5-frame sheets — `player-turn-*.png`, `player-turn-*-sheet.png`
+- Nerd feed / hit / bolt states — `boss-nerd-feed.png`, `boss-nerd-hit.png`, `boss-nerd-bolt.png`
+- Tiguan driving 2-frame sheet — `boss-tiguan-drive.png`, `tiguan-drive-sheet.png`
+- Courier wobble sheets + tram side-roll sheet — `courier-*-sheet.png`, `tram-body-sheet.png`
+
+Animation sheets are composed programmatically from Grok-generated bases (pixelate + frame offsets).

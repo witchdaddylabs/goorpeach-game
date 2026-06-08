@@ -1,113 +1,50 @@
 import Phaser from 'phaser';
-import { COLOURS, COURIER } from '../config';
+import { COURIER } from '../config';
 import { getLayout } from '../systems/Layout';
 import type { CourierBrand } from '../types';
 
-const HIT_TEXTURE = 'courierHit';
-
 /**
  * Courier — GoorPeach scooter, ChewSnog e-bike, GorgeRush pushbike (docs/BRIEF.md).
- * Chunky procedural top-down riders with glowing food bags — not car sprites.
+ * Grok-generated sprites with wobble/pedal loops and pulsing food bags.
  */
 export class Courier {
-  readonly sprite: Phaser.Physics.Arcade.Image;
+  readonly sprite: Phaser.Physics.Arcade.Sprite;
   readonly brand: CourierBrand;
-  private readonly gfx: Phaser.GameObjects.Graphics;
+  private readonly foodBag: Phaser.GameObjects.Sprite;
   private hp: number;
   private readonly baseX: number;
   private elapsed = 0;
   private readonly cfg: (typeof COURIER)[CourierBrand];
   private readonly bodySize: { w: number; h: number };
+  private readonly displaySize: { w: number; h: number };
 
   constructor(scene: Phaser.Scene, x: number, y: number, brand: CourierBrand) {
-    Courier.ensureHitTexture(scene);
     this.brand = brand;
     this.cfg = COURIER[brand];
     this.bodySize = COURIER.body[brand];
+    this.displaySize = COURIER.displaySize[brand];
     this.hp = this.cfg.hp;
     this.baseX = x;
 
-    this.sprite = scene.physics.add.image(x, y, HIT_TEXTURE);
-    this.sprite.setDisplaySize(this.bodySize.w, this.bodySize.h);
-    this.sprite.setVisible(false);
+    const sheet = COURIER.sheet[brand];
+    const anim = COURIER.anim[brand];
+
+    this.sprite = scene.physics.add.sprite(x, y, sheet);
+    this.sprite.setDisplaySize(this.displaySize.w, this.displaySize.h);
     this.sprite.setDepth(COURIER.spriteDepth);
     this.sprite.setVelocityY(this.cfg.speed);
-
-    this.gfx = scene.add.graphics();
-    this.gfx.setDepth(COURIER.spriteDepth);
-    this.redraw();
-  }
-
-  private static ensureHitTexture(scene: Phaser.Scene): void {
-    if (scene.textures.exists(HIT_TEXTURE)) return;
-    const g = scene.make.graphics({}, false);
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, 1, 1);
-    g.generateTexture(HIT_TEXTURE, 1, 1);
-    g.destroy();
-  }
-
-  private redraw(): void {
-    const colour = COURIER.brandColour[this.brand];
-    this.gfx.clear();
-    this.gfx.setPosition(this.sprite.x, this.sprite.y);
-
-    switch (this.brand) {
-      case 'GoorPeach':
-        this.drawScooter(colour);
-        break;
-      case 'ChewSnog':
-        this.drawEbike(colour);
-        break;
-      case 'GorgeRush':
-        this.drawPushbike(colour);
-        break;
+    if (scene.anims.exists(anim)) {
+      this.sprite.play(anim);
     }
-    this.drawFoodBag();
-  }
 
-  /** GoorPeach — compact scooter, peach orange. */
-  private drawScooter(colour: number): void {
-    this.gfx.fillStyle(colour, 1);
-    this.gfx.fillRect(-5, -4, 10, 12);
-    this.gfx.fillStyle(COLOURS.textDark, 1);
-    this.gfx.fillRect(-6, -9, 12, 3);
-    this.gfx.fillRect(-1, -11, 2, 4);
-    this.gfx.fillStyle(COLOURS.road, 1);
-    this.gfx.fillCircle(-4, 6, 2);
-    this.gfx.fillCircle(4, 6, 2);
-  }
+    this.sprite.body?.setSize(this.bodySize.w, this.bodySize.h);
 
-  /** ChewSnog — sturdier e-bike frame, bile green. */
-  private drawEbike(colour: number): void {
-    this.gfx.fillStyle(colour, 1);
-    this.gfx.fillRect(-7, -5, 14, 10);
-    this.gfx.fillStyle(COLOURS.textDark, 1);
-    this.gfx.fillRect(-8, -10, 16, 3);
-    this.gfx.lineStyle(2, COLOURS.textDark, 1);
-    this.gfx.strokeRect(-7, -2, 14, 6);
-    this.gfx.fillStyle(COLOURS.road, 1);
-    this.gfx.fillCircle(-5, 7, 2);
-    this.gfx.fillCircle(5, 7, 2);
-  }
-
-  /** GorgeRush — thin pushbike + rider silhouette, magenta. */
-  private drawPushbike(colour: number): void {
-    this.gfx.fillStyle(colour, 1);
-    this.gfx.fillRect(-2, -10, 4, 18);
-    this.gfx.fillRect(-6, 0, 12, 2);
-    this.gfx.fillCircle(0, -12, 3);
-    this.gfx.fillStyle(COLOURS.road, 1);
-    this.gfx.fillCircle(-4, 8, 2);
-    this.gfx.fillCircle(4, 8, 2);
-  }
-
-  /** Glowing delivery bag (all brands). */
-  private drawFoodBag(): void {
-    this.gfx.fillStyle(COLOURS.cyan, 0.95);
-    this.gfx.fillCircle(0, 2, 4);
-    this.gfx.lineStyle(1, COLOURS.text, 0.7);
-    this.gfx.strokeCircle(0, 2, 4);
+    this.foodBag = scene.add.sprite(x, y + 4, 'foodBagSheet');
+    this.foodBag.setDisplaySize(COURIER.foodBagSize, COURIER.foodBagSize);
+    this.foodBag.setDepth(COURIER.spriteDepth + 1);
+    if (scene.anims.exists('foodBagPulse')) {
+      this.foodBag.play('foodBagPulse');
+    }
   }
 
   update(delta: number): void {
@@ -124,7 +61,7 @@ export class Courier {
       );
     }
 
-    this.redraw();
+    this.foodBag.setPosition(this.sprite.x, this.sprite.y + 4);
   }
 
   getBounds(): Phaser.Geom.Rectangle {
@@ -140,9 +77,13 @@ export class Courier {
   hit(): boolean {
     this.hp -= 1;
     if (this.hp > 0) {
-      this.gfx.setAlpha(0.35);
+      this.sprite.setAlpha(0.35);
+      this.foodBag.setAlpha(0.35);
       this.sprite.scene.time.delayedCall(80, () => {
-        if (this.gfx.active) this.gfx.setAlpha(1);
+        if (this.sprite.active) {
+          this.sprite.setAlpha(1);
+          this.foodBag.setAlpha(1);
+        }
       });
       return false;
     }
@@ -154,7 +95,7 @@ export class Courier {
   }
 
   destroy(): void {
-    if (this.gfx?.active) this.gfx.destroy();
+    if (this.foodBag?.active) this.foodBag.destroy();
     if (this.sprite?.active) this.sprite.destroy();
   }
 }

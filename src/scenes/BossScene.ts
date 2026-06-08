@@ -342,7 +342,7 @@ export class BossScene extends Phaser.Scene {
       if (dist < BOSS.feeder.deliverDist) {
         if (this.phase === 'feeding') {
           this.feed = Math.min(BOSS.feed.phase2At, this.feed + BOSS.feed.deliveryRise);
-          this.flashNerd(COLOURS.bile);
+          this.showNerdState('feed');
         }
         c.destroy();
         this.feeders.splice(i, 1);
@@ -361,7 +361,7 @@ export class BossScene extends Phaser.Scene {
         pen.destroy();
         this.pens.splice(i, 1);
         this.feed = Math.max(0, this.feed - BOSS.feed.penDrain);
-        this.flashNerd(COLOURS.cyan);
+        this.showNerdState('hit');
       }
     }
 
@@ -374,10 +374,24 @@ export class BossScene extends Phaser.Scene {
 
   private enterEscape(): void {
     this.phase = 'escape';
-    this.nerd.setVisible(false);
+    const boltY = this.nerd.y;
+    this.nerd.setTexture(BOSS.nerd.textures.bolt);
+    this.nerd.setVisible(true);
+    this.tweens.add({
+      targets: this.nerd,
+      y: boltY - 36,
+      duration: BOSS.nerd.boltRunMs,
+      onComplete: () => {
+        if (this.nerd.active) this.nerd.setVisible(false);
+      },
+    });
+
     this.tiguan = this.add
-      .sprite(this.nerd.x, this.nerd.y, BOSS.escape.tiguanTexture)
+      .sprite(this.nerd.x, boltY, BOSS.escape.tiguanTexture)
       .setScale(BOSS.escape.tiguanScale);
+    if (this.anims.exists(BOSS.escape.tiguanAnim)) {
+      this.tiguan.play(BOSS.escape.tiguanAnim);
+    }
     this.tiguanHp = BOSS.escape.tiguanHp;
     this.escapeEndsAt = this.time.now + BOSS.escape.timeMs;
     this.playSfx('tiguanStart', 1.0);
@@ -415,16 +429,24 @@ export class BossScene extends Phaser.Scene {
   private returnToFeeding(): void {
     this.tiguan?.destroy();
     this.tiguan = undefined;
+    this.nerd.setTexture(BOSS.nerd.textures.idle);
     this.nerd.setVisible(true);
     this.nerd.setPosition(BOSS.nerd.x, BOSS.nerd.y);
+    this.nerd.clearTint();
     this.feed = BOSS.feed.secondWind; // second-wind difficulty
     this.phase = 'feeding';
     this.audio?.playCourierCrash(0.8);
   }
 
-  private flashNerd(colour: number): void {
-    this.nerd.setTint(colour);
-    this.time.delayedCall(70, () => this.nerd.active && this.nerd.clearTint());
+  private showNerdState(state: 'feed' | 'hit'): void {
+    const tex = state === 'feed' ? BOSS.nerd.textures.feed : BOSS.nerd.textures.hit;
+    const ms = state === 'feed' ? BOSS.nerd.feedFlashMs : BOSS.nerd.hitFlashMs;
+    this.nerd.setTexture(tex);
+    this.time.delayedCall(ms, () => {
+      if (this.nerd.active && this.phase === 'feeding') {
+        this.nerd.setTexture(BOSS.nerd.textures.idle);
+      }
+    });
   }
 
   private drawHud(): void {
