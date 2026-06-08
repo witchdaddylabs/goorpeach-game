@@ -18,4 +18,4 @@ binding = "DB"
 database_name = "goorpeach-scores"
 # Placeholder — replace with the id from `wrangler d1 create`. Local dev
 # (`wrangler pages dev`) uses a local SQLite file and ignores this value.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "823de159-3f45-438c-8b60-933a6f1f9d92"
