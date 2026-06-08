@@ -29,9 +29,7 @@ import { GameOverScene } from './scenes/GameOverScene';
 import { BossScene } from './scenes/BossScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { ScoreboardScene } from './scenes/ScoreboardScene';
-// Later (not started yet):
-// import { LevelSelectScene } from './scenes/LevelSelectScene';
-// etc.
+import { LevelSelectScene } from './scenes/LevelSelectScene';
 
 /** Whether the player's OS asks us to minimise motion (WCAG 2.1). */
 export const prefersReducedMotion = (): boolean =>
@@ -51,13 +49,13 @@ const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  // Boot → Preload (progress) → Menu → Drive → GameOver is the playable loop so far.
-  // Remaining scenes (Boss, Victory, LevelSelect, Scoreboard) registered as each is
-  // implemented to a verifiable state and tested in the browser.
+  // Full loop: Menu → LevelSelect/Drive → Boss → Victory → Scoreboard, with
+  // GameOver off any death. Remaining scene (Settings) added as it lands.
   scene: [
     BootScene,
     PreloadScene,
     MenuScene,
+    LevelSelectScene,
     DriveScene,
     GameOverScene,
     BossScene,

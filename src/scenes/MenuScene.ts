@@ -71,7 +71,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.createButton('LEVEL SELECT', startY + 28, () => {
-      this.showComingSoon('Level Select');
+      this.scene.start(SCENES.LevelSelect);
     });
 
     this.createButton('SETTINGS', startY + 56, () => {
