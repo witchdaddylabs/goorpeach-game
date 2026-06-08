@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1a1a22" />
+    <meta
+      name="description"
+      content="GoorPeach Apocalypse — drive a beat-up VN Commodore from Richmond to Kew through delivery-rider-infested Melbourne streets."
+    />
+    <title>GoorPeach Apocalypse</title>
+
+    <!-- Fonts: Bungee (titles, HUD numbers) + JetBrains Mono (tabular HUD). -->
+    <!-- font-display:swap so text never blocks first paint. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Inline styles on the canvas wrapper only — permitted by CLAUDE.md. -->
+    <style>
+      :root {
+        /* --text-dark / --road tokens; mirrored in src/config.ts. */
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #1a1a22;
+        overflow: hidden;
+      }
+      /* Game surface: mobile-first, built for touch. Block native gestures so
+         drag-to-steer / hold-to-brake don't scroll or zoom the page. */
+      #game-root {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #game-root canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      /* Visually-hidden text alternative for screen readers (WCAG 2.1). */
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .noscript-msg {
+        color: #f4f0e0;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Phaser mounts its canvas into this wrapper (parent: 'game-root'). -->
+    <main
+      id="game-root"
+      role="application"
+      aria-label="GoorPeach Apocalypse, a top-down driving arcade game. Drive a Commodore from Richmond to Kew, dodging delivery couriers and rogue trams. Best played in landscape on a touch device."
+    >
+      <p class="visually-hidden">
+        GoorPeach Apocalypse is a top-down driving game. Steer your car to dodge
+        couriers and trams while shooting Ozempic pens. Use on-screen touch
+        controls on mobile, or the arrow keys and space bar on a keyboard.
+      </p>
+      <noscript>
+        <p class="noscript-msg">
+          GoorPeach Apocalypse needs JavaScript enabled to run. Please turn on
+          JavaScript and reload.
+        </p>
+      </noscript>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

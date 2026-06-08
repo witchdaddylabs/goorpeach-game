@@ -1,0 +1,25 @@
+{
+  "name": "goorpeach-game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "GoorPeach Apocalypse — a late-90s, GTA-1-style top-down Melbourne driving game.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p functions/tsconfig.json",
+    "db:migrate:local": "wrangler d1 migrations apply goorpeach-scores --local --persist-to .wrangler/pdev",
+    "db:migrate:remote": "wrangler d1 migrations apply goorpeach-scores --remote",
+    "dev:full": "npm run build && wrangler pages dev --persist-to .wrangler/pdev"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0",
+    "wrangler": "^3.99.0"
+  }
+}

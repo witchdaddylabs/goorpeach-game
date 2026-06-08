@@ -1,0 +1,21 @@
+# Cloudflare Pages + Functions config.
+#
+# The static site (Vite) builds to /dist; the /functions directory is deployed
+# as Pages Functions automatically. The D1 binding below is what the scores API
+# (functions/api/scores.ts) reads as `env.DB`.
+#
+# One-time setup (needs your Cloudflare login) — see docs/SCOREBOARD.md:
+#   wrangler d1 create goorpeach-scores
+#   # paste the returned database_id below
+#   wrangler d1 migrations apply goorpeach-scores --remote
+
+name = "goorpeach-game"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "goorpeach-scores"
+# Placeholder — replace with the id from `wrangler d1 create`. Local dev
+# (`wrangler pages dev`) uses a local SQLite file and ignores this value.
+database_id = "00000000-0000-0000-0000-000000000000"
