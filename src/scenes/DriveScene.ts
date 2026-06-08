@@ -456,8 +456,8 @@ export class DriveScene extends Phaser.Scene {
       if (next) {
         this.scene.start(SCENES.Drive, { levelId: nextId, score: carriedScore });
       } else {
-        // TODO: after Approaching Kew (level 4), launch BossScene (Kew arena).
-        this.scene.start(SCENES.Menu);
+        // After Approaching Kew (level 4), into the Kew boss arena.
+        this.scene.start(SCENES.Boss, { score: carriedScore });
       }
     });
   }
