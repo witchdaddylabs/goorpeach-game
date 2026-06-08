@@ -12,6 +12,33 @@ A single-page browser game. Static HTML / JS. Built with Phaser 3 + TypeScript +
 
 -----
 
+## Build status — current state & next steps
+
+*Living section. Last updated 2026-06-08. Everything below is on `main`, typechecks + builds clean, but is **not yet playtested in a browser**.*
+
+**Implemented:**
+- Boot → Preload (real progress bar) → Menu (audio unlock on Start)
+- Full driving campaign — Richmond, Fitzroy, Collingwood, Approaching Kew (`data/levels.ts`): couriers (brand subclasses + per-brand `COURIER` config), trams + flashing telegraph, four power-ups, HUD, procedural scrolling road
+- Mobile-first touch (`ui/TouchControls.ts`) merged with keyboard; entities are input-agnostic (rule 5)
+- Run flow — score carried across levels, progressive unlocks (`Persistence`), level→level→boss progression, GameOver (restart / submit score)
+- BossScene (Kew) — two phases (feeding frenzy + Tiguan escape), all tuning in the `BOSS` config block
+- VictoryScene + ScoreboardScene — global Top-20 with 3-letter arcade initials entry, submitting to the D1 leaderboard online with a localStorage fallback offline
+- LevelSelectScene — padlocks on locked suburbs
+- Global high-score backend — Cloudflare D1 + `/api/scores` Pages Function
+
+**Assets:** Path B (CC0) placeholders sourced — Kenney road tiles, marcusvh top-down pixel cars, OpenGameArt vehicles, freesound audio (see `CREDITS.md`). Still need recolour/resize/animation to the brand palette; bespoke art (Path A: Nerd, Tiguan, W-class tram, Commodore damage states, landmarks) not yet generated.
+
+**Next steps (priority order):**
+1. **Playtest + tune.** Nothing has been verified in-browser. Highest-risk: boss balance (`BOSS`) and touch feel (`TOUCH`).
+2. **Settings — DECISION PENDING.** The working pattern calls for a Settings screen, but the locked folder structure has no `SettingsScene`. Decide: add `SettingsScene` (deliberate structure addition) vs fold into `ui/PauseOverlay.ts`. Covers volume, mute, CRT toggle, reduced motion, touch sensitivity; persist via a `Persistence` settings getter/setter (still a TODO).
+3. **PauseOverlay** (`ui/PauseOverlay.ts` is still a stub) — in-game Resume / Restart / Quit / Mute on the P key.
+4. **Polish pass** — damage states, CRT scanline overlay (default on, reduced-motion aware), screen shake, particles, easter eggs, and integrating/recolouring real sprites + animations over the placeholder rectangles.
+5. **Menu wiring** — view the scoreboard from the menu; Credits screen.
+
+**Known shortcuts to revisit:** Nerd/Tiguan are rectangle/vehicle-sprite proxies; player/courier/pen use placeholder car sprites; the road is procedural (no tileset art yet).
+
+-----
+
 ## Stack (non-negotiable)
 
 - **Phaser 3** (latest 3.x)
