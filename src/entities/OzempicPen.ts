@@ -3,15 +3,17 @@ import { PEN } from '../config';
 import { getLayout } from '../systems/Layout';
 
 /**
- * OzempicPen — the player's projectile. A small cyan capsule (not a car sprite).
+ * OzempicPen — the player's projectile. Grok-generated pen sprite.
  * Generous against couriers when fired (CLAUDE.md rule 9). Tuning from PEN.
  */
 export class OzempicPen {
-  private readonly body: Phaser.GameObjects.Rectangle;
+  private readonly body: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.body = scene.add.rectangle(x, y, PEN.width, PEN.height, PEN.colour);
-    this.body.setStrokeStyle(1, 0xffffff, 0.6);
+    this.body = scene.add.image(x, y, PEN.texture);
+    this.body.setDisplaySize(PEN.width, PEN.height);
+    this.body.setOrigin(0.5, 0.5);
+    this.body.setDepth(11);
   }
 
   getBounds(): Phaser.Geom.Rectangle {

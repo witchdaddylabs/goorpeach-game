@@ -82,25 +82,42 @@ export const SCENES = {
 /* -------------------------------------------------------------------------- */
 
 export const SPRITE_PATHS = {
-  // Player (VN Commodore) — using real dumped sedan from marcusvh 2D Top Down Pixel Cars pack
-  playerClean: 'sprites/2D TOP DOWN PIXEL CARS/Sedan/sedan_red.png',
-  playerWorn: 'sprites/2D TOP DOWN PIXEL CARS/Sedan/sedan_gray.png', // damage-state proxy until bespoke Commodore art
-  // TODO: wrecked variant + turn animations from the source
+  // Player (VN Commodore) — Grok-generated GTA-1 style bespoke sprites
+  playerClean: 'sprites/generated/player-clean.png',
+  playerWorn: 'sprites/generated/player-worn.png',
+  playerWrecked: 'sprites/generated/player-wrecked.png',
 
-  // Couriers are procedural (scooter / e-bike / pushbike) — see entities/Courier.ts
+  // Couriers — scooter sprite; e-bike / pushbike remain procedural (entities/Courier.ts)
+  courierScooter: 'sprites/generated/courier-scooter.png',
 
-  // Road / background — the road itself is drawn procedurally (palette tokens,
-  // chunky GTA-1 look) so no heavy background bitmap ships. Kept tileset ref for
-  // future detail props.
-  roadTiles: 'sprites/sprite25_0.png',           // chasersgaming road set
+  // Road / background — procedural scroll; tileset kept for future detail props
+  roadTiles: 'sprites/sprite25_0.png',
 
-  // Additional vehicles from other dumped sources (for variety / boss / tram proxies)
+  // Hazards + projectiles
+  tramBody: 'sprites/generated/tram-body.png',
+  tramWarningLights: 'sprites/generated/tram-warning-lights.png',
+  ozempicPen: 'sprites/generated/ozempic-pen.png',
+
+  // Power-ups (32×32 icons)
+  powerupAmmo: 'sprites/generated/powerup-ammo.png',
+  powerupBoost: 'sprites/generated/powerup-boost.png',
+  powerupShield: 'sprites/generated/powerup-shield.png',
+  powerupMagpie: 'sprites/generated/powerup-magpie.png',
+
+  // Boss arena (Kew)
+  bossNerd: 'sprites/generated/boss-nerd.png',
+  bossTiguan: 'sprites/generated/boss-tiguan.png',
+  landmarkKewMansion: 'sprites/generated/landmark-kew-mansion.png',
+
+  // Suburb landmarks (easter eggs per level)
+  landmarkSkipGirl: 'sprites/generated/landmark-skip-girl.png',
+  landmarkVicMarket: 'sprites/generated/landmark-vic-market.png',
+  landmarkMcg: 'sprites/generated/landmark-mcg.png',
+
+  // Legacy sourced vehicles (ambient variety)
   vehicleAudi: 'sprites/vehicles/Audi.png',
   vehiclePolice: 'sprites/vehicles/Police.png',
   vehicleAmbulance: 'sprites/vehicles/Ambulance.png',
-
-  // TODO: the rest (food bags, powerups, tram, landmarks, boss, pen, damage states, animations)
-  // will be added as the unique assets are generated or further sourced.
 } as const;
 
 export const AUDIO_PATHS = {
@@ -270,12 +287,52 @@ export const PARTICLES = {
 
 export const LANDMARKS: Record<
   number,
-  { showAtMs: number; hideAfterMs: number; xFrac: number; label: string; colour: number; w: number; h: number }
+  {
+    showAtMs: number;
+    hideAfterMs: number;
+    xFrac: number;
+    label: string;
+    sprite: keyof typeof SPRITE_PATHS;
+    displayW: number;
+    displayH: number;
+  }
 > = {
-  1: { showAtMs: 14000, hideAfterMs: 5500, xFrac: 0.78, label: 'SKIP GIRL', colour: COLOURS.magenta, w: 6, h: 16 },
-  2: { showAtMs: 16000, hideAfterMs: 5500, xFrac: 0.2, label: 'VIC MKT', colour: COLOURS.footpath, w: 22, h: 9 },
-  3: { showAtMs: 12000, hideAfterMs: 5500, xFrac: 0.52, label: 'MCG', colour: COLOURS.tramBody, w: 26, h: 11 },
-  4: { showAtMs: 18000, hideAfterMs: 6000, xFrac: 0.68, label: 'KEW MANSION', colour: COLOURS.footpath, w: 20, h: 14 },
+  1: {
+    showAtMs: 14000,
+    hideAfterMs: 5500,
+    xFrac: 0.78,
+    label: 'SKIP GIRL',
+    sprite: 'landmarkSkipGirl',
+    displayW: 32,
+    displayH: 48,
+  },
+  2: {
+    showAtMs: 16000,
+    hideAfterMs: 5500,
+    xFrac: 0.2,
+    label: 'VIC MKT',
+    sprite: 'landmarkVicMarket',
+    displayW: 64,
+    displayH: 24,
+  },
+  3: {
+    showAtMs: 12000,
+    hideAfterMs: 5500,
+    xFrac: 0.52,
+    label: 'MCG',
+    sprite: 'landmarkMcg',
+    displayW: 96,
+    displayH: 24,
+  },
+  4: {
+    showAtMs: 18000,
+    hideAfterMs: 6000,
+    xFrac: 0.68,
+    label: 'KEW MANSION',
+    sprite: 'landmarkKewMansion',
+    displayW: 80,
+    displayH: 54,
+  },
 };
 
 /* -------------------------------------------------------------------------- */
@@ -302,7 +359,7 @@ export const PLAYER = {
   // Collision tuning (forgiving on player side per CLAUDE.md rule 9)
   hitboxPadding: 8,
   /** Texture keys (preloaded in PreloadScene) for progressive damage. */
-  textures: { clean: 'playerClean', worn: 'playerWorn' },
+  textures: { clean: 'playerClean', worn: 'playerWorn', wrecked: 'playerWrecked' },
   wornBelowLives: 3, // swap to worn texture below this count
   criticalLives: 1, // last heart — persistent hazard tint
   hitFlashTint: COLOURS.hazard,
@@ -490,11 +547,12 @@ export const LAYOUT_PORTRAIT: GameLayout = {
 
 export const PEN = {
   speed: 480, // px/s up the screen
-  width: 5,
-  height: 14,
+  width: 8,
+  height: 16,
   colour: COLOURS.cyan,
   muzzleOffsetY: 30, // spawn this far ahead of the car
   despawnY: ROAD.topY - 4, // cull above the play band
+  texture: 'ozempicPen',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -539,8 +597,15 @@ export const TRAM = {
 /* -------------------------------------------------------------------------- */
 
 export const POWERUP = {
-  visualRadius: 12, // chunky pickup icon radius
+  visualRadius: 12, // hit radius for collection
+  iconSize: 24, // display size for sprite icons
   spawnAboveRoad: 28, // scrolls down with the road into the player band
+  textures: {
+    ammo: 'powerupAmmo',
+    boost: 'powerupBoost',
+    shield: 'powerupShield',
+    magpie: 'powerupMagpie',
+  } as const,
   ammo: { shots: 4 },
   boost: { multiplier: 1.5, durationMs: 6000 },
   shield: { absorbs: 1 },
@@ -556,7 +621,7 @@ export const BOSS = {
   arena: { x: 40, y: 60, w: 400, h: 175 },
   playerSpeed: 155, // px/s
   playerScale: 0.7,
-  nerd: { x: 240, y: 92, w: 84, h: 78 },
+  nerd: { x: 240, y: 92, w: 84, h: 78, texture: 'bossNerd' },
   feed: {
     start: 30, // initial feed meter %
     winAt: 0, // drain to here to beat the boss
@@ -573,7 +638,8 @@ export const BOSS = {
     timeMs: 18000, // 18s to disable the Tiguan
     tiguanHp: 8, // pen hits to disable
     tiguanSpeed: 70, // px/s toward the exit
-    tiguanScale: 0.8,
+    tiguanScale: 0.85,
+    tiguanTexture: 'bossTiguan',
     exitY: -50, // off the top = escaped
   },
 } as const;

@@ -47,7 +47,7 @@ export class PlayerCar {
       sprite.setTexture(PLAYER.textures.worn);
       sprite.clearTint();
     } else {
-      sprite.setTexture(PLAYER.textures.worn);
+      sprite.setTexture(PLAYER.textures.wrecked);
       sprite.setTint(PLAYER.hitFlashTint);
     }
   }

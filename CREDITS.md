@@ -53,13 +53,16 @@ Pixabay is still recommended for additional loops (all CC0, direct downloads).
 
 ## Generated assets (Path A — unique Melbourne / game-specific)
 
-(Record tool + date + commercial terms when generated.)
+Generated with Grok Imagine (2026-06-09), pixelated to target resolution, integrated under `public/sprites/generated/`.
 
-- The Nerd (idle/feed/bolt/hit states)
-- VW Tiguan (parked + driving)
-- W-class tram body + warning lights
-- Suburb landmarks (Skipping Girl sign, Vic Market, MCG, Eastern Fwy overpass, Kew mansion)
-- Glowing food bags (small/medium/large)
-- Ozempic pen projectile
-- Power-up icons (ammo pen, tram boost, parma shield, magpie swoop)
-- Player Commodore damage states + turning animations (after sourcing a base sedan)
+- Player Commodore — clean, worn (2 HP), wrecked (1 HP) — `player-clean.png`, `player-worn.png`, `player-wrecked.png`
+- The Nerd boss sprite — `boss-nerd.png`
+- VW Tiguan boss escape vehicle — `boss-tiguan.png`
+- W-class tram body — `tram-body.png`
+- Tram crossing warning lights — `tram-warning-lights.png`
+- Ozempic pen projectile — `ozempic-pen.png`
+- Power-up icons — ammo, tram boost, parma shield, magpie — `powerup-*.png`
+- Suburb landmarks — Skipping Girl, Vic Market, MCG, Kew mansion — `landmark-*.png`
+- GoorPeach scooter courier base — `courier-scooter.png`
+
+Still procedural / not yet generated: e-bike and pushbike courier sprites, food bag pulse animations, player turn animations, Nerd animation states (idle/feed/bolt/hit), Tiguan driving frames.

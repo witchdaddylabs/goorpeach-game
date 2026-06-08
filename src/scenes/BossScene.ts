@@ -42,7 +42,7 @@ export class BossScene extends Phaser.Scene {
   private over = false;
 
   private player!: Phaser.GameObjects.Sprite;
-  private nerd!: Phaser.GameObjects.Rectangle;
+  private nerd!: Phaser.GameObjects.Image;
   private touch!: TouchControls;
   private pauseOverlay!: PauseOverlay;
   private paused = false;
@@ -96,16 +96,18 @@ export class BossScene extends Phaser.Scene {
     this.score = new Score();
     this.score.seed(this.entryScore);
 
-    // Arena: mansion lawn
-    this.add.rectangle(240, 135, 480, 270, COLOURS.tramBody).setOrigin(0.5); // lawn green
+    // Arena: Kew mansion backdrop + lawn
+    this.add.image(240, 70, 'landmarkKewMansion').setDisplaySize(320, 120).setOrigin(0.5, 0.5).setAlpha(0.92);
+    this.add.rectangle(240, 135, 480, 270, COLOURS.tramBody).setOrigin(0.5).setAlpha(0.55); // lawn green
     this.add.rectangle(240, 40, 480, 36, COLOURS.footpath).setOrigin(0.5); // mansion frontage band
     this.add
       .text(240, 40, 'KEW — THE NERD', { fontFamily: 'Bungee', fontSize: '14px', color: COLOUR_HEX.textDark })
       .setOrigin(0.5);
 
-    // The Nerd (Patagonia-vest proxy)
-    this.nerd = this.add.rectangle(BOSS.nerd.x, BOSS.nerd.y, BOSS.nerd.w, BOSS.nerd.h, COLOURS.hazard);
-    this.nerd.setStrokeStyle(3, COLOURS.bile);
+    // The Nerd — Grok-generated Patagonia-vest boss sprite
+    this.nerd = this.add.image(BOSS.nerd.x, BOSS.nerd.y, BOSS.nerd.texture);
+    this.nerd.setDisplaySize(BOSS.nerd.w, BOSS.nerd.h);
+    this.nerd.setOrigin(0.5, 0.5);
 
     // Player car (free movement in the arena)
     this.player = this.add.sprite(240, 200, 'playerClean').setScale(BOSS.playerScale);
@@ -373,7 +375,9 @@ export class BossScene extends Phaser.Scene {
   private enterEscape(): void {
     this.phase = 'escape';
     this.nerd.setVisible(false);
-    this.tiguan = this.add.sprite(this.nerd.x, this.nerd.y, 'vehiclePolice').setScale(BOSS.escape.tiguanScale);
+    this.tiguan = this.add
+      .sprite(this.nerd.x, this.nerd.y, BOSS.escape.tiguanTexture)
+      .setScale(BOSS.escape.tiguanScale);
     this.tiguanHp = BOSS.escape.tiguanHp;
     this.escapeEndsAt = this.time.now + BOSS.escape.timeMs;
     this.playSfx('tiguanStart', 1.0);
@@ -419,8 +423,8 @@ export class BossScene extends Phaser.Scene {
   }
 
   private flashNerd(colour: number): void {
-    this.nerd.setFillStyle(colour);
-    this.time.delayedCall(70, () => this.nerd.active && this.nerd.setFillStyle(COLOURS.hazard));
+    this.nerd.setTint(colour);
+    this.time.delayedCall(70, () => this.nerd.active && this.nerd.clearTint());
   }
 
   private drawHud(): void {

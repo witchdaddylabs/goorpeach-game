@@ -41,7 +41,7 @@ export class DriveScene extends Phaser.Scene {
   private scrollSpeed = 0;
   private roadBase!: Phaser.GameObjects.Graphics;
   private roadLines!: Phaser.GameObjects.Graphics;
-  private landmarkGfx!: Phaser.GameObjects.Graphics;
+  private landmarkSprite?: Phaser.GameObjects.Image;
   private landmarkLabel!: Phaser.GameObjects.Text;
   private roadScroll = 0;
 
@@ -122,7 +122,8 @@ export class DriveScene extends Phaser.Scene {
     this.roadBase = this.add.graphics();
     this.drawRoadBase();
     this.roadLines = this.add.graphics();
-    this.landmarkGfx = this.add.graphics().setDepth(2);
+    this.landmarkSprite?.destroy();
+    this.landmarkSprite = undefined;
     this.landmarkLabel = this.add
       .text(0, 0, '', { fontFamily: 'JetBrains Mono', fontSize: '5px', color: COLOUR_HEX.text })
       .setDepth(2)
@@ -513,20 +514,34 @@ export class DriveScene extends Phaser.Scene {
 
   private drawLandmark(): void {
     const lm = LANDMARKS[this.levelId];
-    this.landmarkGfx.clear();
     this.landmarkLabel.setVisible(false);
-    if (!lm) return;
+    if (!lm) {
+      this.landmarkSprite?.setVisible(false);
+      return;
+    }
 
     const elapsed = this.levelData.durationMs - this.timeLeft * 1000;
-    if (elapsed < lm.showAtMs || elapsed > lm.showAtMs + lm.hideAfterMs) return;
+    if (elapsed < lm.showAtMs || elapsed > lm.showAtMs + lm.hideAfterMs) {
+      this.landmarkSprite?.setVisible(false);
+      return;
+    }
 
     const { width, road } = getLayout();
     const x = width * lm.xFrac;
     const y = road.topY + 48 + (elapsed - lm.showAtMs) * 0.03;
 
-    this.landmarkGfx.fillStyle(lm.colour, 0.92);
-    this.landmarkGfx.fillRect(x - lm.w / 2, y, lm.w, lm.h);
-    this.landmarkLabel.setText(lm.label).setPosition(x, y + lm.h + 2).setVisible(true);
+    if (!this.landmarkSprite) {
+      this.landmarkSprite = this.add.image(x, y, lm.sprite).setDepth(2);
+      this.landmarkSprite.setDisplaySize(lm.displayW, lm.displayH);
+      this.landmarkSprite.setOrigin(0.5, 0);
+    } else {
+      this.landmarkSprite.setTexture(lm.sprite);
+      this.landmarkSprite.setDisplaySize(lm.displayW, lm.displayH);
+      this.landmarkSprite.setPosition(x, y);
+      this.landmarkSprite.setVisible(true);
+    }
+
+    this.landmarkLabel.setText(lm.label).setPosition(x, y + lm.displayH + 2).setVisible(true);
   }
 
   private drawRoadLines(): void {

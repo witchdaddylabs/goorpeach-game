@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { COLOURS, TRAM } from '../config';
+import { TRAM } from '../config';
 import { getLayout } from '../systems/Layout';
 
 export type TramDirection = 'left' | 'right';
 
 /** Tram — W-class crosses horizontally from a side street (docs/BRIEF.md). */
 export class Tram {
-  readonly body: Phaser.GameObjects.Rectangle;
+  readonly body: Phaser.GameObjects.Image;
   private readonly velocityX: number;
   readonly crossY: number;
 
@@ -17,15 +17,13 @@ export class Tram {
     const length = tramLayout.length;
     this.crossY = crossY;
 
-    if (direction === 'left') {
-      this.velocityX = speed;
-      this.body = scene.add.rectangle(-length / 2, crossY, length, TRAM.height, COLOURS.tramBody);
-    } else {
-      this.velocityX = -speed;
-      this.body = scene.add.rectangle(width + length / 2, crossY, length, TRAM.height, COLOURS.tramBody);
-    }
+    const startX = direction === 'left' ? -length / 2 : width + length / 2;
+    this.velocityX = direction === 'left' ? speed : -speed;
 
-    this.body.setStrokeStyle(3, COLOURS.footpath);
+    this.body = scene.add.image(startX, crossY, 'tramBody');
+    this.body.setDisplaySize(length, TRAM.height);
+    this.body.setOrigin(0.5, 0.5);
+    this.body.setDepth(9);
   }
 
   update(delta: number): void {

@@ -33,17 +33,10 @@ export class PreloadScene extends Phaser.Scene {
       this.load.audio(key, path);
     }
 
-    // Player car only — couriers are procedural riders (entities/Courier.ts)
-    this.load.image('playerClean', SPRITE_PATHS.playerClean);
-    this.load.image('playerWorn', SPRITE_PATHS.playerWorn);
-
-    // Road tiles kept for future detail props; the scrolling road itself is
-    // drawn procedurally in DriveScene (no heavy background bitmap).
-    this.load.image('roadTiles', SPRITE_PATHS.roadTiles);
-
-    // Extra vehicles
-    if (SPRITE_PATHS.vehicleAudi) this.load.image('vehicleAudi', SPRITE_PATHS.vehicleAudi);
-    if (SPRITE_PATHS.vehiclePolice) this.load.image('vehiclePolice', SPRITE_PATHS.vehiclePolice);
+    // All sprite paths — Phaser texture key matches the config key
+    for (const [key, path] of Object.entries(SPRITE_PATHS)) {
+      this.load.image(key, path);
+    }
 
     // Real progress bar driven by actual loads
     this.load.on('progress', (progress: number) => {
