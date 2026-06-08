@@ -54,11 +54,14 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.createButton('RESTART LEVEL', 180, () => {
+    this.createButton('RESTART LEVEL', 166, () => {
       const target = this.params.restartScene ?? SCENES.Drive;
       this.scene.start(target, { levelId: this.params.levelId, score: this.params.restartScore });
     });
-    this.createButton('QUIT TO MENU', 210, () => {
+    this.createButton('SUBMIT SCORE', 194, () => {
+      this.scene.start(SCENES.Scoreboard, { score: this.params.score, levelReached: this.params.levelId });
+    });
+    this.createButton('QUIT TO MENU', 222, () => {
       this.scene.start(SCENES.Menu);
     });
 

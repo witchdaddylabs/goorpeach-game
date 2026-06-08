@@ -347,22 +347,7 @@ export class BossScene extends Phaser.Scene {
     this.over = true;
     this.score.addBossDefeat();
     this.audio?.stopMusic();
-
-    this.add.rectangle(240, 135, 360, 90, COLOURS.textDark, 0.85).setOrigin(0.5);
-    this.add
-      .text(240, 112, 'KEW IS SAFE. FOR NOW.', { fontFamily: 'Bungee', fontSize: '16px', color: COLOUR_HEX.bile })
-      .setOrigin(0.5);
-    this.add
-      .text(240, 140, `FINAL SCORE: ${this.score.value}`, {
-        fontFamily: 'JetBrains Mono',
-        fontSize: '10px',
-        color: COLOUR_HEX.text,
-      })
-      .setOrigin(0.5);
-
-    this.playSfx('victorySting', 0.9);
-    // TODO: VictoryScene + 3-letter initials entry submitting score to the leaderboard.
-    this.time.delayedCall(2200, () => this.scene.start(SCENES.Menu));
+    this.scene.start(SCENES.Victory, { score: this.score.value });
   }
 
   private loseBoss(): void {
