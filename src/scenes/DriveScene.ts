@@ -371,8 +371,9 @@ export class DriveScene extends Phaser.Scene {
       }
       if (killed) continue;
 
-      // Player collision (raw bounds — player hitbox already forgiving)
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), c.getBounds())) {
+      // Player damage — tight, player-favouring boxes on both sides so couriers
+      // only hurt when they visibly touch the car (not via sprite padding).
+      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getHitBounds(), c.getBodyBounds())) {
         const dead = this.player.takeDamage();
         c.destroy();
         this.couriers.splice(i, 1);
@@ -419,7 +420,7 @@ export class DriveScene extends Phaser.Scene {
       if (tram.offscreen) {
         tram.destroy();
         this.trams.splice(i, 1);
-      } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), tram.getHitBounds())) {
+      } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getHitBounds(), tram.getHitBounds())) {
         Particles.burst(this, this.player.sprite.x, this.player.sprite.y, 'tramSparks');
         ScreenShake.tramDeath(this);
         this.gameOver('tram');

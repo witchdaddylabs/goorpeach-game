@@ -377,7 +377,15 @@ export const LANDMARKS: Record<
 export const PLAYER = {
   startingLives: 3, // 3 hearts — see docs/BRIEF.md
   startingAmmo: 8, // tutorial ammo — topped up by frequent PEN pickups
-  scale: 0.85,
+  scale: 0.62, // smaller Commodore — easier to thread the lanes (was 0.85)
+  /**
+   * Damage hitbox as a fraction trimmed off each side of the sprite's display
+   * bounds. The cleaned sprite has transparent padding, so raw getBounds() reads
+   * far bigger than the visible car; this insets it to the car itself, kept
+   * slightly forgiving on the player side (CLAUDE.md rule 9).
+   */
+  hitInsetXFrac: 0.24,
+  hitInsetYFrac: 0.13,
   // Base dimensions (pixels at 480×270 internal res). Player-favouring hitboxes.
   width: 48,
   height: 96,

@@ -74,6 +74,16 @@ export class Courier {
     return new Phaser.Geom.Rectangle(b.x - g, b.y - g, b.width + g * 2, b.height + g * 2);
   }
 
+  /**
+   * Tight rider hitbox for player-damage collisions — the compact body size from
+   * config, centred on the sprite, so couriers only hurt you when they visibly
+   * touch (not via the sprite's transparent padding). Player-favouring (rule 9).
+   */
+  getBodyBounds(): Phaser.Geom.Rectangle {
+    const { w, h } = this.bodySize;
+    return new Phaser.Geom.Rectangle(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+  }
+
   hit(): boolean {
     this.hp -= 1;
     if (this.hp > 0) {
