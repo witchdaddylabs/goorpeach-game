@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, TRAM, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, TRAM, TRAM_WARN, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
 import { getLayout } from '../systems/Layout';
 import { LEVELS } from '../data/levels';
 import { PlayerCar } from '../entities/PlayerCar';
@@ -470,8 +470,11 @@ export class DriveScene extends Phaser.Scene {
   private spawnTram(): void {
     const direction: TramDirection = this.nextTramIndex % 2 === 0 ? 'left' : 'right';
     const crossY = this.tramCrossY();
-    const warning = new TramWarning(this, crossY);
+    const warning = new TramWarning(this, crossY, direction);
     this.tramWarnings.push(warning);
+
+    // Audible + haptic alarm — the visual telegraph alone was too easy to miss.
+    this.ringTramAlarm();
 
     const timer = this.time.delayedCall(
       TRAM.warningMs,
@@ -480,6 +483,20 @@ export class DriveScene extends Phaser.Scene {
       this,
     );
     this.tramTimers.push(timer);
+  }
+
+  /** Bell rings spread across the telegraph window, plus a touch-device buzz. */
+  private ringTramAlarm(): void {
+    const spacing = TRAM.warningMs / (TRAM_WARN.bellRings + 1);
+    for (let i = 0; i < TRAM_WARN.bellRings; i++) {
+      const delay = i * spacing;
+      const ring = (): void => this.playSfx('tramBell', TRAM_WARN.bellVolume);
+      if (delay <= 0) ring();
+      else this.tramTimers.push(this.time.delayedCall(delay, ring, undefined, this));
+    }
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(TRAM_WARN.vibrateMs);
+    }
   }
 
   /** Stop tram telegraphs, pending spawns, and the bell when a run ends. */

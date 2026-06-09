@@ -650,6 +650,42 @@ export const TRAM = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
+/* Enhanced tram telegraph (entities/TramWarning.ts) — louder, clearer warning */
+/* The base lights alone read as too subtle, so the telegraph now adds a       */
+/* flashing hazard band across the road, direction chevrons, a label, the bell */
+/* and a touch-haptic pulse. All tuning lives here (rule 1).                    */
+/* -------------------------------------------------------------------------- */
+
+export const TRAM_WARN = {
+  /** Hazard zone painted across the road at the cross line — the kill band. */
+  bandHeight: 30,
+  bandAlphaSteady: 0.14, // always visible so the zone is never a surprise
+  bandAlphaFlash: 0.4, // peak alpha on the flash beat
+  bandColour: COLOURS.caution,
+  borderColour: COLOURS.hazard,
+  borderWidth: 2,
+  /** Bigger, higher-contrast edge lights than the base TRAM.lightW/H. */
+  lightW: 20,
+  lightH: 16,
+  lightOffAlpha: 0.18, // dimmer off-state than before (was 0.45) → harder flash
+  /** Direction chevrons telegraph which way the W-class is coming from. */
+  chevronCount: 3,
+  chevronSize: 9,
+  chevronGap: 13,
+  chevronColour: COLOURS.hazard,
+  /** Flashing label above the band. */
+  label: 'TRAM',
+  labelColour: COLOUR_HEX.caution,
+  labelSize: '11px',
+  labelOffsetY: 24, // px above the cross line
+  /** Ring the bell this many times across the telegraph, plus a haptic buzz. */
+  bellRings: 2,
+  bellVolume: 1,
+  vibrateMs: 70, // navigator.vibrate on touch devices
+  depth: 7, // above road, below couriers/player
+} as const;
+
+/* -------------------------------------------------------------------------- */
 /* Power-up constants (effects applied in DriveScene)                        */
 /* -------------------------------------------------------------------------- */
 

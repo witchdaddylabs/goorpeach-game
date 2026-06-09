@@ -40,7 +40,7 @@ export class MenuScene extends Phaser.Scene {
 
     // Big chunky title — Bungee + palette
     this.add
-      .text(centerX, height * 0.15, 'GOORPEACH', {
+      .text(centerX, height * 0.15, 'DOORPEACH', {
         fontFamily: 'Bungee',
         fontSize: '36px',
         color: COLOUR_HEX.text,

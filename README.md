@@ -1,4 +1,4 @@
-# GoorPeach Apocalypse
+# DoorPeach Apocalypse
 
 A high-paced, Melbourne-specific arcade racer. Drive a beat-up VN Commodore from
 Richmond to Kew through delivery-rider-infested streets, Ozempic-shoot the

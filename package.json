@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "GoorPeach Apocalypse — a late-90s, GTA-1-style top-down Melbourne driving game.",
+  "description": "DoorPeach Apocalypse — a late-90s, GTA-1-style top-down Melbourne driving game.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

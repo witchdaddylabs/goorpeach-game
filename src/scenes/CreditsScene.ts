@@ -4,7 +4,7 @@ import { getLayout } from '../systems/Layout';
 
 /** Condensed attribution from CREDITS.md — audit-clean, fits the screen. */
 const CREDIT_LINES = [
-  'GOORPEACH APOCALYPSE',
+  'DOORPEACH APOCALYPSE',
   '',
   'Sprites',
   'Kenney RPG Urban Pack (CC0)',

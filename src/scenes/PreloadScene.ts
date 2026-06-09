@@ -75,7 +75,7 @@ export class PreloadScene extends Phaser.Scene {
     this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
 
     this.add
-      .text(centerX, centerY - height * 0.19, 'GOORPEACH', {
+      .text(centerX, centerY - height * 0.19, 'DOORPEACH', {
         fontFamily: 'Bungee',
         fontSize: '28px',
         color: COLOUR_HEX.text,
