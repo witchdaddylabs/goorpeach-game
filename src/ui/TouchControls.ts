@@ -64,21 +64,30 @@ export class TouchControls {
     const deadzone = touch.steerDeadzone / settings.touchSteerSensitivity;
     let left = false;
     let right = false;
+    let steerAxis = 0;
 
     if (this.steerPointer && this.steerPointer.isDown) {
+      // Joystick: proportional to how far the drag is from the anchor, so the car
+      // tracks the finger (small drag = gentle, full drag = hard lock). Swipe:
+      // velocity of the finger this frame. Both feed a single -1..1 throttle.
       const dx =
         settings.touchInputMode === 'swipe'
           ? this.steerPointer.x - this.lastSteerX
           : this.steerPointer.x - this.steerAnchorX;
       this.lastSteerX = this.steerPointer.x;
-      if (dx < -deadzone) left = true;
-      else if (dx > deadzone) right = true;
+
+      if (Math.abs(dx) > deadzone) {
+        const range = (touch.steerRange / settings.touchSteerSensitivity) || 1;
+        steerAxis = Phaser.Math.Clamp(dx / range, -1, 1);
+        if (steerAxis < 0) left = true;
+        else right = true;
+      }
     } else {
       this.steerPointer = null;
     }
 
     const brake = !!this.brakePointer && this.brakePointer.isDown;
-    return { left, right, brake };
+    return { left, right, brake, steerAxis };
   }
 
   /**

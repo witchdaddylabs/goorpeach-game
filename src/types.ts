@@ -19,6 +19,12 @@ export interface SteerIntent {
   left: boolean;
   right: boolean;
   brake: boolean;
+  /**
+   * Proportional steer throttle in [-1, 1] (negative = left). Touch sets this
+   * from drag distance so the car tracks the finger; keyboard sets ±1. When
+   * absent, entities fall back to the boolean left/right as ±1.
+   */
+  steerAxis?: number;
 }
 
 /** A single courier spawn within a wave. TODO: expand (lane, delay, etc.). */

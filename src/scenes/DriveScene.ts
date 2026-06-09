@@ -225,7 +225,15 @@ export class DriveScene extends Phaser.Scene {
     const kbRight = (c?.right.isDown ?? false) || (this.keyD?.isDown ?? false);
     const kbBrake = (c?.down.isDown ?? false) || (this.keyS?.isDown ?? false);
     const t = this.touch.getState();
-    return { left: kbLeft || t.left, right: kbRight || t.right, brake: kbBrake || t.brake };
+    // Keyboard is full-lock ±1; touch is proportional. Keyboard wins when held.
+    const kbAxis = (kbRight ? 1 : 0) - (kbLeft ? 1 : 0);
+    const steerAxis = kbAxis !== 0 ? kbAxis : (t.steerAxis ?? 0);
+    return {
+      left: kbLeft || t.left,
+      right: kbRight || t.right,
+      brake: kbBrake || t.brake,
+      steerAxis,
+    };
   }
 
   update(time: number, delta: number): void {

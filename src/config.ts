@@ -382,7 +382,7 @@ export const PLAYER = {
   width: 48,
   height: 96,
   // Steering / movement (tuned from config only)
-  steerSpeed: 220, // px per second lateral
+  steerSpeed: 300, // px per second lateral at full lock (keyboard or full touch drag)
   forwardSpeed: 140, // fallback; each level passes scrollSpeed as the car's maxSpeed
   cruiseY: 168, // normal lane position (lower on screen = further back in the pack)
   brakeY: 202, // dropped back when braking hard
@@ -511,6 +511,8 @@ export interface TouchLayout {
   brakeZone: { x: number; y: number; w: number; h: number };
   fireZone: { x: number; y: number; w: number; h: number };
   moveRange: number;
+  /** Drag distance (px from anchor) for full proportional steer lock — smaller = snappier. */
+  steerRange: number;
 }
 
 export interface TramLayout {
@@ -563,6 +565,7 @@ export const LAYOUT_LANDSCAPE: GameLayout = {
     brakeZone: { x: 330, y: 170, w: 150, h: 100 },
     fireZone: { x: 330, y: 0, w: 150, h: 110 },
     moveRange: 40,
+    steerRange: 26,
   },
   tram: { length: 148 },
   hud: { titleY: 26, timerY: 46, footerY: 265, hintY: 250, livesX: 60, ammoX: 180, scoreX: 320 },
@@ -593,6 +596,7 @@ export const LAYOUT_PORTRAIT: GameLayout = {
     brakeZone: { x: 175, y: 340, w: 95, h: 140 },
     fireZone: { x: 175, y: 78, w: 95, h: 110 },
     moveRange: 36,
+    steerRange: 22,
   },
   tram: { length: 120 },
   hud: { titleY: 36, timerY: 58, footerY: 462, hintY: 446, livesX: 42, ammoX: 135, scoreX: 228 },

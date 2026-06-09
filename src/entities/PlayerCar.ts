@@ -97,8 +97,10 @@ export class PlayerCar {
     const speedMult = now < this.boostEndTime ? PLAYER.boostMultiplier : 1.0;
     const effectiveSteer = this.steerSpeed * speedMult;
 
-    if (intent.left) sprite.x -= effectiveSteer * dt;
-    if (intent.right) sprite.x += effectiveSteer * dt;
+    // Proportional steer: touch tracks the finger, keyboard is full lock. Falls
+    // back to the boolean left/right (as ±1) for any input source without an axis.
+    const axis = intent.steerAxis ?? ((intent.right ? 1 : 0) - (intent.left ? 1 : 0));
+    sprite.x += effectiveSteer * axis * dt;
 
     this.applySteerVisual(intent);
 
