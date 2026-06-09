@@ -627,6 +627,18 @@ export const PEN = {
 /** @deprecated Use getLayout().touch */
 export const TOUCH = LAYOUT_LANDSCAPE.touch;
 
+/**
+ * Touch steering rate — decoupled from the keyboard. A thumb-hold is coarser
+ * than tapping arrow keys, so touch steers at `factor` of PLAYER.steerSpeed
+ * (at Touch Sens = 1.0). The Touch Sens slider scales this live, clamped to
+ * [minRate, maxRate]. Keyboard stays at full PLAYER.steerSpeed.
+ */
+export const TOUCH_STEER = {
+  factor: 0.62, // 0.62 × 300 ≈ 186 px/s default — gentle enough to place the small car
+  minRate: 0.3, // Touch Sens floor → ~90 px/s
+  maxRate: 1.2, // Touch Sens ceiling → 360 px/s (matches keyboard-ish)
+} as const;
+
 /* -------------------------------------------------------------------------- */
 /* Tram constants — fixed spawns, 1.5s telegraph, instant death              */
 /* -------------------------------------------------------------------------- */

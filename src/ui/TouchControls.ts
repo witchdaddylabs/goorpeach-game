@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLOURS, COLOUR_HEX } from '../config';
+import { COLOURS, COLOUR_HEX, TOUCH_STEER } from '../config';
 import { getLayout } from '../systems/Layout';
 import { Persistence } from '../systems/Persistence';
 import type { SteerIntent } from '../types';
@@ -70,7 +70,12 @@ export class TouchControls {
     const touch = getLayout().touch;
     const settings = Persistence.getSettings();
     const deadzone = touch.steerDeadzone;
-    const rate = Phaser.Math.Clamp(settings.touchSteerSensitivity, 0.4, 1.6);
+    // Touch steers gentler than the keyboard; Touch Sens scales it (config TOUCH_STEER).
+    const rate = Phaser.Math.Clamp(
+      TOUCH_STEER.factor * settings.touchSteerSensitivity,
+      TOUCH_STEER.minRate,
+      TOUCH_STEER.maxRate,
+    );
     let left = false;
     let right = false;
     let steerAxis = 0;
