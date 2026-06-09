@@ -17,7 +17,6 @@ export class TouchControls {
   private steerPointer: Phaser.Input.Pointer | null = null;
   private steerAnchorX = 0;
   private steerAnchorY = 0;
-  private lastSteerX = 0;
   private brakePointer: Phaser.Input.Pointer | null = null;
   private firePending = false;
 
@@ -46,7 +45,6 @@ export class TouchControls {
       this.steerPointer = pointer;
       this.steerAnchorX = pointer.x;
       this.steerAnchorY = pointer.y;
-      this.lastSteerX = pointer.x;
     } else if (TouchControls.inZone(pointer, touch.brakeZone)) {
       this.brakePointer = pointer;
     }
@@ -57,30 +55,39 @@ export class TouchControls {
     if (pointer === this.brakePointer) this.brakePointer = null;
   }
 
-  /** Current steering intent from active touches. */
+  /**
+   * Current steering intent from active touches. Steering is discrete on/off at a
+   * constant rate — exactly like the keyboard — so it feels instant and never
+   * over-shoots into a far lane. The lower-left pad acts as two on-screen arrow
+   * keys: hold the left/right side to steer that way, release to stop.
+   *
+   * 'joystick' (default): the side is judged from the pad's centre — touch the
+   * left half to go left, right half to go right (fixed buttons).
+   * 'swipe': the side is judged from where you first touched (relative d-pad).
+   * Touch Sens scales the constant steer rate so it can be tuned on-device.
+   */
   getState(): SteerIntent {
     const touch = getLayout().touch;
     const settings = Persistence.getSettings();
-    const deadzone = touch.steerDeadzone / settings.touchSteerSensitivity;
+    const deadzone = touch.steerDeadzone;
+    const rate = Phaser.Math.Clamp(settings.touchSteerSensitivity, 0.4, 1.6);
     let left = false;
     let right = false;
     let steerAxis = 0;
 
     if (this.steerPointer && this.steerPointer.isDown) {
-      // Joystick: proportional to how far the drag is from the anchor, so the car
-      // tracks the finger (small drag = gentle, full drag = hard lock). Swipe:
-      // velocity of the finger this frame. Both feed a single -1..1 throttle.
-      const dx =
+      const reference =
         settings.touchInputMode === 'swipe'
-          ? this.steerPointer.x - this.lastSteerX
-          : this.steerPointer.x - this.steerAnchorX;
-      this.lastSteerX = this.steerPointer.x;
+          ? this.steerAnchorX
+          : touch.steerZone.x + touch.steerZone.w / 2;
+      const offset = this.steerPointer.x - reference;
 
-      if (Math.abs(dx) > deadzone) {
-        const range = (touch.steerRange / settings.touchSteerSensitivity) || 1;
-        steerAxis = Phaser.Math.Clamp(dx / range, -1, 1);
-        if (steerAxis < 0) left = true;
-        else right = true;
+      if (offset < -deadzone) {
+        left = true;
+        steerAxis = -rate;
+      } else if (offset > deadzone) {
+        right = true;
+        steerAxis = rate;
       }
     } else {
       this.steerPointer = null;
@@ -122,20 +129,28 @@ export class TouchControls {
     touch: ReturnType<typeof getLayout>['touch'],
   ): void {
     const g = scene.add.graphics();
+    const sz = touch.steerZone;
+    const half = sz.w / 2;
+    // Two arrow-key halves with a faint seam, so the keyboard-like pad reads clearly.
     g.fillStyle(COLOURS.cyan, touch.hintAlpha);
-    g.fillRect(touch.steerZone.x, touch.steerZone.y, touch.steerZone.w, touch.steerZone.h);
+    g.fillRect(sz.x, sz.y, half - 1, sz.h);
+    g.fillStyle(COLOURS.cyan, touch.hintAlpha * 1.6);
+    g.fillRect(sz.x + half + 1, sz.y, half - 1, sz.h);
     g.fillStyle(COLOURS.caution, touch.hintAlpha);
     g.fillRect(touch.brakeZone.x, touch.brakeZone.y, touch.brakeZone.w, touch.brakeZone.h);
     g.fillStyle(COLOURS.hazard, touch.hintAlpha);
     g.fillRect(touch.fireZone.x, touch.fireZone.y, touch.fireZone.w, touch.fireZone.h);
 
-    const tag = (x: number, y: number, s: string): void => {
+    const tag = (x: number, y: number, s: string, size = 6): void => {
       scene.add
-        .text(x, y, s, { fontFamily: 'JetBrains Mono', fontSize: '6px', color: COLOUR_HEX.text })
+        .text(x, y, s, { fontFamily: 'JetBrains Mono', fontSize: `${size}px`, color: COLOUR_HEX.text })
         .setOrigin(0.5)
-        .setAlpha(0.5);
+        .setAlpha(0.6);
     };
-    tag(touch.steerZone.x + touch.steerZone.w / 2, touch.steerZone.y + 12, 'DRAG TO STEER');
+    const midY = sz.y + sz.h / 2;
+    tag(sz.x + half / 2, midY, '<', 14);
+    tag(sz.x + half + half / 2, midY, '>', 14);
+    tag(sz.x + sz.w / 2, sz.y + sz.h - 10, 'STEER');
     tag(touch.brakeZone.x + touch.brakeZone.w / 2, touch.brakeZone.y + 12, 'BRAKE');
     tag(touch.fireZone.x + touch.fireZone.w / 2, touch.fireZone.y + 12, 'TAP FIRE');
   }
