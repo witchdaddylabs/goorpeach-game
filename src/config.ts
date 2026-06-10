@@ -275,11 +275,11 @@ export const CRT = {
   lineSpacing: 3,
   lineHeight: 1,
   // WebGL post-FX pipeline (ui/CrtPipeline.ts) — a real curved CRT tube.
-  // Kept gentle so HUD text at the corners stays readable on mobile.
-  curvature: 0.08, // barrel distortion toward the edges
-  scanlineDepth: 0.16, // how dark the gaps between scanlines get
-  aberration: 0.0016, // RGB split (uv units), stronger at the edges
-  vignette: 0.28, // corner darkening
+  // Kept subtle so it flavours the look without distracting from gameplay.
+  curvature: 0.048, // barrel distortion toward the edges
+  scanlineDepth: 0.096, // how dark the gaps between scanlines get
+  aberration: 0.00096, // RGB split (uv units), stronger at the edges
+  vignette: 0.168, // corner darkening
 } as const;
 
 /* -------------------------------------------------------------------------- */
