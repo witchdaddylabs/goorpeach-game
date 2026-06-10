@@ -4,6 +4,7 @@ import { LEVELS } from '../data/levels';
 import { Persistence } from '../systems/Persistence';
 import { Audio } from '../systems/Audio';
 import { getLayout } from '../systems/Layout';
+import { CrtOverlay } from '../ui/CrtOverlay';
 
 /**
  * LevelSelectScene — pick a suburb. Levels unlock progressively (the furthest
@@ -17,6 +18,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
   create(): void {
     const { width, height, centerX, centerY } = getLayout();
+    new CrtOverlay(this);
     this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
     this.add
       .text(centerX, height * 0.1, 'SELECT SUBURB', { fontFamily: 'Bungee', fontSize: '20px', color: COLOUR_HEX.text })

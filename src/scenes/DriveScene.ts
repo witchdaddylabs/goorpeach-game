@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, TRAM, TRAM_WARN, HAPTICS, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, TRAM, TRAM_WARN, HAPTICS, EXHAUST, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
 import { getLayout } from '../systems/Layout';
 import { LEVELS } from '../data/levels';
 import { PlayerCar } from '../entities/PlayerCar';
@@ -137,6 +137,7 @@ export class DriveScene extends Phaser.Scene {
 
     this.hud = new HUD(this, level.name);
     this.player = new PlayerCar(this, centerX, player.cruiseY, 'playerClean', level.scrollSpeed);
+    this.addExhaust();
     this.touch = new TouchControls(this);
     this.pauseOverlay = new PauseOverlay(this, {
       onResume: () => this.togglePause(false),
@@ -522,6 +523,26 @@ export class DriveScene extends Phaser.Scene {
       else this.tramTimers.push(this.time.delayedCall(delay, ring, undefined, this));
     }
     this.vibrate(TRAM_WARN.vibrateMs);
+  }
+
+  /** Exhaust puffs trailing the car. Skipped under reduced motion. */
+  private addExhaust(): void {
+    if (Persistence.getSettings().reducedMotion) return;
+    if (!this.textures.exists('softGlow')) return;
+    this.add
+      .particles(0, 0, 'softGlow', {
+        follow: this.player.sprite,
+        followOffset: { x: 0, y: EXHAUST.offsetY },
+        frequency: EXHAUST.frequencyMs,
+        lifespan: EXHAUST.lifespanMs,
+        speedX: { min: -8, max: 8 },
+        speedY: { min: EXHAUST.speedMin, max: EXHAUST.speedMax },
+        scale: { start: EXHAUST.scaleStart, end: 0 },
+        alpha: { start: EXHAUST.alphaStart, end: 0 },
+        tint: EXHAUST.tint,
+        blendMode: 'NORMAL',
+      })
+      .setDepth(EXHAUST.depth);
   }
 
   /** Subtle touch-device haptic. No-ops on desktop and iOS Safari. */

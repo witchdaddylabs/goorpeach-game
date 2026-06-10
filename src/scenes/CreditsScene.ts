@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX, FONTS } from '../config';
 import { getLayout } from '../systems/Layout';
+import { CrtOverlay } from '../ui/CrtOverlay';
 
 /** Condensed attribution from CREDITS.md — audit-clean, fits the screen. */
 const CREDIT_LINES = [
@@ -31,6 +32,7 @@ export class CreditsScene extends Phaser.Scene {
 
   create(): void {
     const { width, height, centerX, centerY } = getLayout();
+    new CrtOverlay(this);
 
     this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
     this.add

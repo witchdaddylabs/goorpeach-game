@@ -269,10 +269,17 @@ export const SETTINGS_UI = {
 /* -------------------------------------------------------------------------- */
 
 export const CRT = {
+  // Canvas fallback (non-WebGL devices) — flat scanline Graphics overlay.
   depth: 9000,
   lineAlpha: 0.1,
   lineSpacing: 3,
   lineHeight: 1,
+  // WebGL post-FX pipeline (ui/CrtPipeline.ts) — a real curved CRT tube.
+  // Kept gentle so HUD text at the corners stays readable on mobile.
+  curvature: 0.08, // barrel distortion toward the edges
+  scanlineDepth: 0.16, // how dark the gaps between scanlines get
+  aberration: 0.0016, // RGB split (uv units), stronger at the edges
+  vignette: 0.28, // corner darkening
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -294,6 +301,40 @@ export const PARTICLES = {
   depth: 15,
   courierBurst: { count: 8, spread: 22, size: 3, durationMs: 280 },
   tramSparks: { count: 12, spread: 34, size: 4, durationMs: 420 },
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Exhaust trail behind the player car (DriveScene) — off when reduced motion */
+/* -------------------------------------------------------------------------- */
+
+export const EXHAUST = {
+  depth: 9, // just under the car (depth 10)
+  offsetY: 30, // emit from behind the car (rear = +y)
+  frequencyMs: 70, // one puff per interval
+  lifespanMs: 420,
+  speedMin: 28, // drift down/back, px/s
+  speedMax: 56,
+  scaleStart: 0.5,
+  alphaStart: 0.28,
+  tint: 0x8a8a92, // exhaust grey
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Power-up glow (entities/PowerUp.ts) — soft additive halo, gentle pulse      */
+/* -------------------------------------------------------------------------- */
+
+export const POWERUP_GLOW = {
+  depth: 6, // under the icon (depth 7)
+  size: 30, // display size of the soft-glow sprite
+  alphaMin: 0.25,
+  alphaMax: 0.6,
+  pulseMs: 700,
+  tint: {
+    ammo: COLOURS.cyan,
+    boost: COLOURS.hazard,
+    shield: COLOURS.bile,
+    magpie: COLOURS.magenta,
+  } as Record<string, number>,
 } as const;
 
 /* -------------------------------------------------------------------------- */

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { POWERUP } from '../config';
+import { POWERUP, POWERUP_GLOW, COLOURS } from '../config';
 import { getLayout } from '../systems/Layout';
 import type { PowerUpKind } from '../types';
 
@@ -8,6 +8,7 @@ export class PowerUp {
   readonly kind: PowerUpKind;
   active = true;
   private readonly icon: Phaser.GameObjects.Image;
+  private readonly glow?: Phaser.GameObjects.Image;
   private readonly x: number;
   private baseY: number;
   private y: number;
@@ -20,6 +21,25 @@ export class PowerUp {
     this.y = y;
     this.phase = Math.random() * Math.PI * 2;
 
+    // Soft additive halo behind the icon, gently pulsing — draws the eye to rewards.
+    if (scene.textures.exists('softGlow')) {
+      this.glow = scene.add
+        .image(x, y, 'softGlow')
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setTint(POWERUP_GLOW.tint[kind] ?? COLOURS.cyan)
+        .setDisplaySize(POWERUP_GLOW.size, POWERUP_GLOW.size)
+        .setDepth(POWERUP_GLOW.depth)
+        .setAlpha(POWERUP_GLOW.alphaMin);
+      scene.tweens.add({
+        targets: this.glow,
+        alpha: POWERUP_GLOW.alphaMax,
+        duration: POWERUP_GLOW.pulseMs,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
     this.icon = scene.add.image(x, y, POWERUP.textures[kind]);
     this.icon.setDisplaySize(POWERUP.iconSize, POWERUP.iconSize);
     this.icon.setOrigin(0.5, 0.5);
@@ -31,6 +51,7 @@ export class PowerUp {
     this.phase += (delta / 1000) * POWERUP.floatHz * Math.PI * 2;
     this.y = this.baseY + Math.sin(this.phase) * POWERUP.floatAmp;
     this.icon.setPosition(this.x, this.y);
+    this.glow?.setPosition(this.x, this.y);
   }
 
   get offscreen(): boolean {
@@ -44,6 +65,7 @@ export class PowerUp {
   }
 
   destroy(): void {
+    this.glow?.destroy();
     this.icon.destroy();
     this.active = false;
   }

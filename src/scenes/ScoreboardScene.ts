@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX, LEADERBOARD } from '../config';
 import { Scoreboard } from '../systems/Scoreboard';
 import { getLayout } from '../systems/Layout';
+import { CrtOverlay } from '../ui/CrtOverlay';
 import type { ScoreEntry } from '../types';
 
 /** Data passed in when arriving from a finished run. */
@@ -45,6 +46,7 @@ export class ScoreboardScene extends Phaser.Scene {
 
   create(): void {
     const { width, height, centerX, centerY } = getLayout();
+    new CrtOverlay(this);
     this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
     this.add
       .text(centerX, height * 0.08, 'GLOBAL TOP 20', { fontFamily: 'Bungee', fontSize: '18px', color: COLOUR_HEX.cyan })

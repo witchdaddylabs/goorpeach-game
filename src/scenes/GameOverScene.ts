@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX } from '../config';
 import { Audio } from '../systems/Audio';
 import { getLayout } from '../systems/Layout';
+import { CrtOverlay } from '../ui/CrtOverlay';
 
 /** Data passed in from DriveScene when a run ends in death. */
 export interface GameOverData {
@@ -30,6 +31,7 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     const { width, height, centerX, centerY } = getLayout();
+    new CrtOverlay(this);
 
     this.add.rectangle(centerX, centerY, width, height, COLOURS.textDark).setOrigin(0.5);
 

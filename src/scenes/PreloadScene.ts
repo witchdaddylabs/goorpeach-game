@@ -50,10 +50,25 @@ export class PreloadScene extends Phaser.Scene {
 
     this.load.on('complete', () => {
       this.registerAnimations();
+      this.makeRuntimeTextures();
       this.time.delayedCall(90, () => {
         this.scene.start(SCENES.Menu);
       });
     });
+  }
+
+  /** Soft radial glow dot, built once — used by exhaust particles + power-up halos. */
+  private makeRuntimeTextures(): void {
+    if (this.textures.exists('softGlow')) return;
+    const size = 32;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    // Stack translucent circles so alpha accumulates toward the centre (soft falloff).
+    for (let r = size / 2; r > 0; r--) {
+      g.fillStyle(0xffffff, 0.05);
+      g.fillCircle(size / 2, size / 2, r);
+    }
+    g.generateTexture('softGlow', size, size);
+    g.destroy();
   }
 
   /** Register all config-driven sprite animations once textures are ready. */
