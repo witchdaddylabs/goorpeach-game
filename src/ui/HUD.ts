@@ -21,6 +21,13 @@ export class HUD {
   private readonly ammoText: Phaser.GameObjects.Text;
   private readonly scoreText: Phaser.GameObjects.Text;
 
+  // Last rendered values — only call setText (which re-rasterises the text
+  // texture) when a value actually changes, instead of every frame.
+  private lastLives = NaN;
+  private lastAmmo = NaN;
+  private lastScore = NaN;
+  private lastSeconds = NaN;
+
   constructor(scene: Phaser.Scene, levelName: string) {
     const { centerX, hud } = getLayout();
 
@@ -58,9 +65,22 @@ export class HUD {
   }
 
   update(state: HudState): void {
-    this.livesText.setText(`LIVES:${state.lives}`);
-    this.ammoText.setText(`AMMO:${state.ammo}`);
-    this.scoreText.setText(`SCORE:${state.score}`);
-    this.timerText.setText(`${Math.max(0, Math.ceil(state.secondsLeft))}s`);
+    if (state.lives !== this.lastLives) {
+      this.lastLives = state.lives;
+      this.livesText.setText(`LIVES:${state.lives}`);
+    }
+    if (state.ammo !== this.lastAmmo) {
+      this.lastAmmo = state.ammo;
+      this.ammoText.setText(`AMMO:${state.ammo}`);
+    }
+    if (state.score !== this.lastScore) {
+      this.lastScore = state.score;
+      this.scoreText.setText(`SCORE:${state.score}`);
+    }
+    const secs = Math.max(0, Math.ceil(state.secondsLeft));
+    if (secs !== this.lastSeconds) {
+      this.lastSeconds = secs;
+      this.timerText.setText(`${secs}s`);
+    }
   }
 }

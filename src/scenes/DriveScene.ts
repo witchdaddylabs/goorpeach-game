@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES, COLOURS, COLOUR_HEX, TRAM, TRAM_WARN, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
+import { SCENES, COLOURS, COLOUR_HEX, TRAM, TRAM_WARN, HAPTICS, POWERUP, COURIER, MESSAGES, LANDMARKS } from '../config';
 import { getLayout } from '../systems/Layout';
 import { LEVELS } from '../data/levels';
 import { PlayerCar } from '../entities/PlayerCar';
@@ -46,6 +46,8 @@ export class DriveScene extends Phaser.Scene {
   private roadScroll = 0;
 
   private pens: OzempicPen[] = [];
+  /** Inactive pens parked for reuse — pens fire ~every 280ms, so pooling avoids churn. */
+  private penPool: OzempicPen[] = [];
   private couriers: Courier[] = [];
   private powerups: PowerUp[] = [];
   private trams: Tram[] = [];
@@ -99,7 +101,10 @@ export class DriveScene extends Phaser.Scene {
     this.timeLeft = level.durationMs / 1000;
 
     // Reset per-run state — Phaser reuses the scene instance across restarts.
+    // The pool holds GameObjects from the *previous* run that Phaser destroyed on
+    // shutdown, so drop those stale references and start the pool empty.
     this.pens = [];
+    this.penPool = [];
     this.couriers = [];
     this.powerups = [];
     this.trams = [];
@@ -281,14 +286,12 @@ export class DriveScene extends Phaser.Scene {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (!pen || !pen.active) {
-        pen?.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
         continue;
       }
       pen.update(delta);
       if (pen.offscreen) {
-        pen.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
       }
     }
   }
@@ -356,8 +359,7 @@ export class DriveScene extends Phaser.Scene {
         const pen = this.pens[p];
         if (!pen || !pen.active) continue;
         if (Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), c.getHitBounds())) {
-          pen.destroy();
-          this.pens.splice(p, 1);
+          this.releasePen(p);
           if (c.hit()) {
             Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
             this.score.addCourier(c.brand);
@@ -378,6 +380,7 @@ export class DriveScene extends Phaser.Scene {
         c.destroy();
         this.couriers.splice(i, 1);
         this.playSfx('heartLost', 0.9);
+        this.vibrate(HAPTICS.courierHit);
         ScreenShake.courierHit(this);
         if (dead) {
           this.gameOver('courier');
@@ -405,6 +408,7 @@ export class DriveScene extends Phaser.Scene {
         p.destroy();
         this.powerups.splice(i, 1);
         this.playSfx('powerupPickup', 0.7);
+        this.vibrate(HAPTICS.powerup);
       }
     }
   }
@@ -430,8 +434,22 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private firePen(): void {
-    this.pens.push(new OzempicPen(this, this.player.sprite.x, this.player.sprite.y - 30));
+    const x = this.player.sprite.x;
+    const y = this.player.sprite.y - 30;
+    const pen = this.penPool.pop();
+    if (pen) pen.spawn(x, y);
+    this.pens.push(pen ?? new OzempicPen(this, x, y));
     this.playSfx('ozempicFire', 0.7);
+  }
+
+  /** Park a spent pen back in the pool and remove it from the active list. */
+  private releasePen(index: number): void {
+    const pen = this.pens[index];
+    this.pens.splice(index, 1);
+    if (pen) {
+      pen.deactivate();
+      this.penPool.push(pen);
+    }
   }
 
   private applyPowerUp(kind: PowerUpKind): void {
@@ -503,8 +521,13 @@ export class DriveScene extends Phaser.Scene {
       if (delay <= 0) ring();
       else this.tramTimers.push(this.time.delayedCall(delay, ring, undefined, this));
     }
+    this.vibrate(TRAM_WARN.vibrateMs);
+  }
+
+  /** Subtle touch-device haptic. No-ops on desktop and iOS Safari. */
+  private vibrate(ms: number): void {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(TRAM_WARN.vibrateMs);
+      navigator.vibrate(ms);
     }
   }
 

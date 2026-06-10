@@ -82,26 +82,13 @@ export const SCENES = {
 /* -------------------------------------------------------------------------- */
 
 export const SPRITE_PATHS = {
-  // Player (VN Commodore) — Grok-generated GTA-1 style bespoke sprites
+  // Player (VN Commodore) — Grok-generated GTA-1 style bespoke sprites.
+  // Steering uses the turn *sheets* (SPRITE_SHEETS); these are the static states.
   playerClean: 'sprites/generated/player-clean.png',
   playerWorn: 'sprites/generated/player-worn.png',
   playerWrecked: 'sprites/generated/player-wrecked.png',
 
-  // Couriers — Grok-generated brand sprites
-  courierScooter: 'sprites/generated/courier-scooter.png',
-  courierEbike: 'sprites/generated/courier-ebike.png',
-  courierPushbike: 'sprites/generated/courier-pushbike.png',
-  foodBag: 'sprites/generated/food-bag.png',
-
-  // Player turn frames (composed into sheets at build time)
-  playerTurnLeft: 'sprites/generated/player-turn-left.png',
-  playerTurnRight: 'sprites/generated/player-turn-right.png',
-
-  // Road / background — procedural scroll; tileset kept for future detail props
-  roadTiles: 'sprites/sprite25_0.png',
-
-  // Hazards + projectiles
-  tramBody: 'sprites/generated/tram-body.png',
+  // Hazards + projectiles (couriers + tram use the animated sheets below)
   tramWarningLights: 'sprites/generated/tram-warning-lights.png',
   ozempicPen: 'sprites/generated/ozempic-pen.png',
 
@@ -111,24 +98,17 @@ export const SPRITE_PATHS = {
   powerupShield: 'sprites/generated/powerup-shield.png',
   powerupMagpie: 'sprites/generated/powerup-magpie.png',
 
-  // Boss arena (Kew) — Nerd state sprites + Tiguan drive frame
+  // Boss arena (Kew) — Nerd state sprites (Tiguan uses tiguanDriveSheet)
   bossNerd: 'sprites/generated/boss-nerd.png',
   bossNerdFeed: 'sprites/generated/boss-nerd-feed.png',
   bossNerdHit: 'sprites/generated/boss-nerd-hit.png',
   bossNerdBolt: 'sprites/generated/boss-nerd-bolt.png',
-  bossTiguan: 'sprites/generated/boss-tiguan.png',
-  bossTiguanDrive: 'sprites/generated/boss-tiguan-drive.png',
   landmarkKewMansion: 'sprites/generated/landmark-kew-mansion.png',
 
   // Suburb landmarks (easter eggs per level)
   landmarkSkipGirl: 'sprites/generated/landmark-skip-girl.png',
   landmarkVicMarket: 'sprites/generated/landmark-vic-market.png',
   landmarkMcg: 'sprites/generated/landmark-mcg.png',
-
-  // Legacy sourced vehicles (ambient variety)
-  vehicleAudi: 'sprites/vehicles/Audi.png',
-  vehiclePolice: 'sprites/vehicles/Police.png',
-  vehicleAmbulance: 'sprites/vehicles/Ambulance.png',
 } as const;
 
 /** Horizontal sprite sheets — frame size + path; keys match PreloadScene texture names. */
@@ -624,8 +604,15 @@ export const PEN = {
 /* Touch controls (mobile-first — ui/TouchControls.ts)                         */
 /* -------------------------------------------------------------------------- */
 
-/** @deprecated Use getLayout().touch */
-export const TOUCH = LAYOUT_LANDSCAPE.touch;
+/**
+ * Haptic feedback (navigator.vibrate, ms) for touch devices — subtle, opt-out by
+ * the OS. No-ops on desktop and iOS Safari. The tram telegraph buzz lives in
+ * TRAM_WARN.vibrateMs.
+ */
+export const HAPTICS = {
+  courierHit: 26,
+  powerup: 14,
+} as const;
 
 /**
  * Touch steering rate — decoupled from the keyboard. A thumb-hold is coarser

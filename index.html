@@ -13,6 +13,16 @@
     />
     <title>DoorPeach Apocalypse</title>
 
+    <!-- Installable as a fullscreen home-screen app (PWA). On iOS, Add to Home
+         Screen runs it standalone with no Safari chrome stealing the screen. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DoorPeach" />
+
     <!-- Fonts: Bungee (titles, HUD numbers) + JetBrains Mono (tabular HUD). -->
     <!-- font-display:swap so text never blocks first paint. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

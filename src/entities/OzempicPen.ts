@@ -16,6 +16,17 @@ export class OzempicPen {
     this.body.setDepth(11);
   }
 
+  /** Re-arm a pooled pen at a new muzzle position instead of allocating one. */
+  spawn(x: number, y: number): void {
+    this.body.setPosition(x, y);
+    this.body.setActive(true).setVisible(true);
+  }
+
+  /** Park the pen for reuse (pooled) — cheaper than destroy/re-create. */
+  deactivate(): void {
+    this.body.setActive(false).setVisible(false);
+  }
+
   getBounds(): Phaser.Geom.Rectangle {
     return this.body.getBounds();
   }
